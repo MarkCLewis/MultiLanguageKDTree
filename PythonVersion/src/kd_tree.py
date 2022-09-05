@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from random import randint
+from random import randrange
 from dataclasses import dataclass
 from numpy import sqrt
 
@@ -47,98 +47,111 @@ def allocate_node_vec(num_parts: int) -> list[KDTree]:
     return [KDTree.leaf(0, []) for _ in range(num_nodes)]
 
 
-# Returns the index of the last Node used in the construction.
-def build_tree(
-    indices: list[int],
-    start: int,
-    end: int,
-    particles: list[Particle],
-    cur_node: int,
-    nodes: list[KDTree],
-) -> int:
-    # println!("start = {} end = {} cur_node = {}", start, end, cur_node)
-    np1 = end - start
-    # println!("s = {}, e = {}, cn = {}", start, end, cur_node)
-    if np1 <= MAX_PARTS:
-        if cur_node >= len(nodes):
-            diff = cur_node + 1 - len(nodes)
-            nodes.extend(KDTree.leaf(0, []) for _ in range(diff))
-        nodes[cur_node].num_parts = np1
-        for i in range(np1):
-            nodes[cur_node].particles[i] = indices[start + i]
-        return cur_node
-    else:
-        # Pick split dim and value
-        min = np.ones(3, dtype=np.float64) * 1e100
-        max = np.ones(3, dtype=np.float64) * -1e100
-        m = 0.0
-        cm = np.zeros(3, dtype=np.float64)
-        for i in range(start, end):
-            m += particles[indices[i]].m
-            cm += particles[indices[i]].m * particles[indices[i]].p
-            min = np.minimum(min, particles[indices[i]].p)
-            max = np.maximum(max, particles[indices[i]].p)
+@dataclass(slots=True)
+class System:
+    indices: list[int]
+    nodes: list[KDTree]
 
-        cm /= m
-        split_dim = 0
-        for dim in range(1, 2):  # FIXME: what is this
-            if max[dim] - min[dim] > max[split_dim] - min[split_dim]:
-                split_dim = dim
-        size = max[split_dim] - min[split_dim]
+    @staticmethod
+    def from_amount(n: int) -> System:
+        return System(list(range(n)), allocate_node_vec(n))
 
-        # Partition particles on split_dim
-        mid = (start + end) // 2
-        s = start
-        e = end
-        while s + 1 < e:
-            # TODO: verify edge case: is this equivalent to fastrand::usize(s..e)?
-            pivot = randint(s, e)
-            tmp = indices[s]
-            indices[s] = indices[pivot]
-            indices[pivot] = tmp
+    # Returns the index of the last Node used in the construction.
+    def build_tree(self,
+                   start: int,
+                   end: int,
+                   particles: list[Particle],
+                   cur_node: int,
+                   ) -> int:
+        # println!("start = {} end = {} cur_node = {}", start, end, cur_node)
+        np1 = end - start
+        # println!("s = {}, e = {}, cn = {}", start, end, cur_node)
+        if np1 <= MAX_PARTS:
+            if cur_node >= len(self.nodes):
+                diff = cur_node + 1 - len(self.nodes)
+                self.nodes.extend(KDTree.leaf(0, []) for _ in range(diff))
+            self.nodes[cur_node].num_parts = np1
 
-            low = s + 1
-            high = e - 1
-            while low <= high:
-                if particles[indices[low]].p[split_dim] < particles[indices[s]].p[split_dim]:
-                    low += 1
+            self.nodes[cur_node].particles = [self.indices[start + i]
+                                              for i in range(np1)]
+            return cur_node
+        else:
+            # Pick split dim and value
+            min = np.ones(3, dtype=np.float64) * 1e100
+            max = np.ones(3, dtype=np.float64) * -1e100
+            m = 0.0
+            cm = np.zeros(3, dtype=np.float64)
+            for i in range(start, end):
+                m += particles[self.indices[i]].m
+                cm += particles[self.indices[i]].m * \
+                    particles[self.indices[i]].p
+                min = np.minimum(min, particles[self.indices[i]].p)
+                max = np.maximum(max, particles[self.indices[i]].p)
+
+            cm /= m
+            split_dim = 0
+            for dim in range(1, 2):  # FIXME: what is this
+                if max[dim] - min[dim] > max[split_dim] - min[split_dim]:
+                    split_dim = dim
+            size = max[split_dim] - min[split_dim]
+
+            # Partition particles on split_dim
+            mid = (start + end) // 2
+            s = start
+            e = end
+            while s + 1 < e:
+                pivot = randrange(s, e)
+                tmp = self.indices[s]
+                try:
+                    self.indices[s] = self.indices[pivot]
+                except IndexError:
+                    print(s, pivot, len(self.indices))
+                self.indices[pivot] = tmp
+
+                low = s + 1
+                high = e - 1
+                while low <= high:
+                    if particles[self.indices[low]].p[split_dim] < particles[self.indices[s]].p[split_dim]:
+                        low += 1
+                    else:
+                        tmp = self.indices[low]
+                        self.indices[low] = self.indices[high]
+                        self.indices[high] = tmp
+                        high -= 1
+
+                tmp = self.indices[s]
+                self.indices[s] = self.indices[high]
+                self.indices[high] = tmp
+
+                if high < mid:
+                    s = high + 1
+                elif high > mid:
+                    e = high
                 else:
-                    tmp = indices[low]
-                    indices[low] = indices[high]
-                    indices[high] = tmp
-                    high -= 1
+                    s = e
 
-            tmp = indices[s]
-            indices[s] = indices[high]
-            indices[high] = tmp
+            split_val = particles[self.indices[mid]].p[split_dim]
 
-            if high < mid:
-                s = high + 1
-            elif high > mid:
-                e = high
-            else:
-                s = e
+            # Recurse on children and build this node.
+            left = self.build_tree(start, mid,
+                                   particles, cur_node + 1)
+            right = self.build_tree(mid, end,
+                                    particles, left + 1)
 
-        split_val = particles[indices[mid]].p[split_dim]
+            if cur_node >= len(self.nodes):
+                self.nodes.extend(KDTree.leaf(0, [])
+                                  for _ in range(cur_node + 1 - len(self.nodes)))
 
-        # Recurse on children and build this node.
-        left = build_tree(indices, start, mid, particles, cur_node + 1, nodes)
-        right = build_tree(indices, mid, end, particles, left + 1, nodes)
+            self.nodes[cur_node].num_parts = 0
+            self.nodes[cur_node].split_dim = split_dim
+            self.nodes[cur_node].split_val = split_val
+            self.nodes[cur_node].m = m
+            self.nodes[cur_node].cm = cm
+            self.nodes[cur_node].size = size
+            self.nodes[cur_node].left = cur_node+1
+            self.nodes[cur_node].right = left+1
 
-        if cur_node >= len(nodes):
-            nodes.extend(KDTree.leaf(0, [])
-                         for _ in range(cur_node + 1 - len(nodes)))
-
-        nodes[cur_node].num_parts = 0
-        nodes[cur_node].split_dim = split_dim
-        nodes[cur_node].split_val = split_val
-        nodes[cur_node].m = m
-        nodes[cur_node].cm = cm
-        nodes[cur_node].size = size
-        nodes[cur_node].left = cur_node+1
-        nodes[cur_node].right = left+1
-
-        return right
+            return right
 
 
 def accel_recur(cur_node: int, p: int, particles: list[Particle], nodes: list[KDTree]) -> f64x3:
@@ -168,13 +181,12 @@ def calc_accel(p: int, particles: list[Particle], nodes: list[KDTree]) -> f64x3:
     return accel_recur(0, p, particles, nodes)
 
 
-def simple_sim(bodies: list[Particle], dt: float, steps: int) -> None:
+def simple_sim(bodies: list[Particle], dt: float, steps: int, print_steps: bool = False) -> None:
     # dt_vec = f64x4:: splat(dt)
     acc = np.zeros((len(bodies), 3), dtype=np.float64)
 
     # time = Instant: : now()
-    tree = allocate_node_vec(len(bodies))
-    indices: list[int] = list(range(len(bodies)))
+    sys = System.from_amount(len(bodies))
 
     for step in range(steps):
         # if step % 100 == 0 {
@@ -182,14 +194,16 @@ def simple_sim(bodies: list[Particle], dt: float, steps: int) -> None:
         # println!("Step = {}, duration = {}, n = {}, nodes = {}", step, elapsed_secs, len(bodies), len(tree))
         #     time = Instant:: now()
         # }
-        indices = list(range(len(bodies)))
+        if print_steps:
+            print(step)
+        sys.indices = list(range(len(bodies)))
 
-        build_tree(indices, 0, len(bodies), bodies, 0, tree)
+        sys.build_tree(0, len(bodies), bodies, 0)
         # if step % 100 == 0 {
         # print_tree(step, tree, bodies)
         # }
         for i in range(len(bodies)):
-            acc[i] = calc_accel(i, bodies, tree)
+            acc[i] = calc_accel(i, bodies, sys.nodes)
 
         for i in range(len(bodies)):
             bodies[i].v += dt * acc[i]
