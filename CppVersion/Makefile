@@ -1,4 +1,4 @@
-FLAGS := -Wall -pedantic -std=c++17 -Ofast
+FLAGS := -Wall -pedantic -std=c++17 -Ofast -march=x86-64 -fomit-frame-pointer
 SRC_FILES := $(wildcard *.cpp)
 OBJ_FILES := $(patsubst %.cpp,%.o,$(SRC_FILES))
 
