@@ -175,7 +175,7 @@ pub fn simple_sim(bodies: &mut Vec<Particle>, dt: f64, steps: i64) {
     for _ in 0..bodies.len() {
         acc.push(f64x4::splat(0.0))
     }
-    let mut time = Instant::now();
+    // let mut time = Instant::now();
     let mut tree = allocate_node_vec(bodies.len());
     let mut indices: Vec<usize> = (0..bodies.len()).collect();
     
