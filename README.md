@@ -14,7 +14,7 @@ updated version of the n-body benchmark that is part of Benchmark Games
 | C++ | Compiling | Needs more verification, but kD-tree looks good. |
 | Scala | Stubbed | |
 | Java | Stubbed | |
-| Python | Not Started | |
+| Python | Rough translation | Translated from Rust literally, so very broken right now |
 | JavaScript | Not Started | |
 | GoLang | Not Started | |
 | C | Not Started | |
