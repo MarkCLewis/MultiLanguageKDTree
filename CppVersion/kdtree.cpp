@@ -194,9 +194,9 @@ void simple_sim(vector<Particle> &bodies, double dt, int steps) {
             indices[i] = i;
         }
         build_tree(indices, 0, bodies.size(), bodies, 0, tree);
-        if (step % 10 == 0) {
-            print_tree(step, tree, bodies);
-        }
+        // if (step % 10 == 0) {
+        //     print_tree(step, tree, bodies);
+        // }
         for (size_t i = 0; i < bodies.size(); ++i) {
             calc_accel(i, bodies, tree, acc[i].v);
         }

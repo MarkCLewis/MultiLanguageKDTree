@@ -12,3 +12,8 @@ authors = ["Mark Lewis <mlewis@trinity.edu>"]
 
 core_simd = { git = "https://github.com/rust-lang/portable-simd" }
 fastrand = "1.4"
+
+[profile.benchmark]
+inherits = "release"
+lto = true
+codegen-units = 1
