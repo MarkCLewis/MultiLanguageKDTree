@@ -20,5 +20,7 @@ int main(int argc, char *argv[]) {
   simple_sim(&particles, dt, steps);
   // println!("{}", start.elapsed().as_nanos() as f64 / 1e9);
 
+  FREE_ARRAY(particles);
+
   return 0;
 }

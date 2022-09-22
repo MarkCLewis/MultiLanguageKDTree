@@ -37,6 +37,21 @@ size_t_array_t new_size_t_array_t(size_t elem_count) {
   return a;
 }
 
+size_t_array_t new_range(size_t start, size_t end) {
+  if (end <= start) {
+    size_t_array_t a = {0, (size_t *)NULL};
+    return a;
+  }
+
+  size_t_array_t a = new_size_t_array_t(end - start);
+
+  for (size_t i = 0; i < end - start; ++i) {
+    a.ptr[i] = i + start;
+  }
+
+  return a;
+}
+
 double random_d() { return (double)rand() / RAND_MAX; }
 
 Particle_array_t circular_orbits(size_t n) {
