@@ -43,9 +43,9 @@ def test_big_solar():
     )
 
 
-def test_big_solar_with_steps():
+def test_big_solar_with_steps(steps=100):
     parts = circular_orbits(5000)
-    simple_sim(parts, 1e-3, 100, print_steps=True)
+    simple_sim(parts, 1e-3, steps, print_steps=True)
 
     sys = System.from_amount(len(parts))
 
@@ -60,4 +60,8 @@ def test_big_solar_with_steps():
 
 
 if __name__ == '__main__':
-    test_big_solar_with_steps()
+    import time
+    t = time.time()
+    test_big_solar_with_steps(5)
+    diff = time.time() - t
+    print(f'Time: {diff:.2f}')

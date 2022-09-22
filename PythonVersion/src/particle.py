@@ -98,7 +98,7 @@ def calc_accel(i: int, j: int, pi: Particle, pj: Particle, acc: npt.NDArray[np.f
     acc[j] += dp * magj
 
 
-def calc_pp_accel(pi: Particle, pj: Particle) -> tuple[float, float, float]:
+def calc_pp_accel(pi: Particle, pj: Particle) -> f64x3:
     dp = pi.p - pj.p
     dp2 = dp @ dp
     dist = sqrt(dp2)
@@ -106,7 +106,7 @@ def calc_pp_accel(pi: Particle, pj: Particle) -> tuple[float, float, float]:
     return dp * magi
 
 
-def calc_cm_accel(pi: Particle, m: float, cm: tuple[float, float, float]) -> tuple[float, float, float]:
+def calc_cm_accel(pi: Particle, m: float, cm: f64x3) -> f64x3:
     dp = pi.p - cm
     dp2 = dp @ dp
     dist = sqrt(dp2)
