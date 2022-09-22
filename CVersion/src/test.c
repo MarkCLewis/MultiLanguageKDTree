@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/_types/_size_t.h>
 
 #include "kdtree.h"
 #include "particle.h"
@@ -80,8 +79,10 @@ void two_leaves() {
   size_t_array_t indices = new_range(0, parts.size);
 
   build_tree(&indices, 0, parts.size, &parts, 0, &node_vec);
-  // recur_test_tree_struct(0, &node_vec, &parts, f64x4::splat(-1e100),
-  //                        f64x4::splat(1e100), );
+
+  double min[3] = {-1e100, -1e100, -1e100};
+  double max[3] = {1e100, 1e100, 1e100};
+  recur_test_tree_struct(0, &node_vec, &parts, min, max);
   assert_eq_size_t(node_vec.ptr[0].num_parts, 0);
   assert_eq_size_t(node_vec.ptr[1].num_parts + node_vec.ptr[2].num_parts, 12);
 

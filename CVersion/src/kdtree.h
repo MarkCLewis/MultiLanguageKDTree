@@ -2,7 +2,6 @@
 #define KDTREE
 
 #include "particle.h"
-#include <sys/_types/_size_t.h>
 
 #define MAX_PARTS ((size_t)7)
 #define THETA ((double)0.3)

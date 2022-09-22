@@ -1,7 +1,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/_types/_size_t.h>
 
 #include "kdtree.h"
 #include "particle.h"
@@ -73,7 +72,6 @@ size_t build_tree(size_t_array_t *indices, size_t start, size_t end,
     while (s + 1 < e) {
       double r;
       do {
-
         r = (double)rand() / RAND_MAX;
       } while (r ==
                1); // there is a tiny chance r = 1, but we want the range
@@ -111,7 +109,7 @@ size_t build_tree(size_t_array_t *indices, size_t start, size_t end,
         s = e;
       }
     }
-    size_t split_val = particles->ptr[indices->ptr[mid]].p[split_dim];
+    double split_val = particles->ptr[indices->ptr[mid]].p[split_dim];
 
     // Recurse on children and build this node.
     size_t left =
@@ -198,23 +196,25 @@ void print_tree(int step, const KDTree_array_t *tree,
     exit(EXIT_FAILURE);
   }
 
-  printf("%lu\n", particles->size);
+  fprintf(file, "%lu\n", particles->size);
 
   for (size_t i_iter = 0; i_iter < tree->size; ++i_iter) {
     KDTree *n = tree->ptr + i_iter;
     if (n->num_parts > 0) {
-      printf("L %lu\n", n->num_parts);
+      fprintf(file, "L %lu\n", n->num_parts);
 
       for (size_t i = 0; i < n->num_parts; ++i) {
         size_t p = n->particles[i];
-        printf("%f %f %f\n", particles->ptr[p].p[0], particles->ptr[p].p[1],
-               particles->ptr[p].p[2]);
+        fprintf(file, "%f %f %f\n", particles->ptr[p].p[0],
+                particles->ptr[p].p[1], particles->ptr[p].p[2]);
       }
     } else {
-      printf("I %lu %f %lu %lu\n", n->split_dim, n->split_val, n->left,
-             n->right);
+      fprintf(file, "I %lu %f %lu %lu\n", n->split_dim, n->split_val, n->left,
+              n->right);
     }
   }
+
+  fclose(file);
 }
 
 void simple_sim(Particle_array_t *bodies, double dt, int steps) {
@@ -227,6 +227,8 @@ void simple_sim(Particle_array_t *bodies, double dt, int steps) {
   size_t_array_t indices = new_size_t_array_t(bodies->size);
 
   for (int step = 0; step < steps; ++step) {
+    printf("Step: %d\n", step);
+
     for (size_t i = 0; i < bodies->size; ++i) {
       indices.ptr[i] = i;
     }

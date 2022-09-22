@@ -1,7 +1,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/_types/_size_t.h>
 
 #include "particle.h"
 

@@ -8,13 +8,13 @@ updated version of the n-body benchmark that is part of Benchmark Games
 
 ## Language Status
 
-| Language   | Basic Status     | Note                                                              |
-| ---------- | ---------------- | ----------------------------------------------------------------- |
-| Rust       | Complete         | All versions currently use SIMD and no dynamic memory after init. |
-| C++        | Compiling        | Needs more verification, but kD-tree looks good.                  |
-| Scala      | Stubbed          |                                                                   |
-| Java       | Stubbed          |                                                                   |
-| Python     | Needs validation | Translated from Rust literally, so may have bugs                  |
-| JavaScript | Not Started      |                                                                   |
-| GoLang     | Not Started      |                                                                   |
-| C          | Compiling        | Translated from C++ literally, it compiles but may have bugs      |
+| Language   | Basic Status     | Note                                                                      |
+| ---------- | ---------------- | ------------------------------------------------------------------------- |
+| Rust       | Complete         | All versions currently use SIMD and no dynamic memory after init.         |
+| C++        | Compiling        | Needs more verification, but kD-tree looks good.                          |
+| Scala      | Stubbed          |                                                                           |
+| Java       | Stubbed          |                                                                           |
+| Python     | Needs validation | Translated from Rust literally, so may have bugs. KD-tree looks sensible. |
+| JavaScript | Not Started      |                                                                           |
+| GoLang     | Not Started      |                                                                           |
+| C          | Compiling        | Passes tests, but runs suspiciously fast                                  |

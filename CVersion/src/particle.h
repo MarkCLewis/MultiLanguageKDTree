@@ -2,7 +2,6 @@
 #define PARTICLE
 
 #include <stddef.h>
-#include <sys/_types/_size_t.h>
 
 #define FREE_ARRAY(arr)                                                        \
   if ((arr).ptr != NULL) {                                                     \
