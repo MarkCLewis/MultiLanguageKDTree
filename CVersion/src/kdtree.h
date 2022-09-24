@@ -2,7 +2,6 @@
 #define KDTREE
 
 #include "particle.h"
-#include <sys/_types/_size_t.h>
 
 #define MAX_PARTS ((size_t)7)
 #define THETA ((double)0.3)
@@ -43,5 +42,10 @@ typedef struct {
 vect3_array_t new_vect3_array_t(size_t elem_count);
 
 void KDTree_resize(KDTree_array_t *arr, size_t new_elem_count);
+KDTree_array_t allocate_node_vec(size_t num_parts);
+
+size_t build_tree(size_t_array_t *indices, size_t start, size_t end,
+                  const Particle_array_t *particles, size_t cur_node,
+                  KDTree_array_t *nodes);
 
 #endif

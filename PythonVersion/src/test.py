@@ -1,7 +1,7 @@
 import numpy as np
 
 from particle import two_bodies, circular_orbits
-from kd_tree import System, recur_test_tree_struct, simple_sim
+from kd_tree import System, recur_test_tree_struct, simple_sim, print_tree
 
 
 def test_single_node():
@@ -42,10 +42,13 @@ def test_big_solar():
         np.ones(3, dtype=np.float64) * (1e100),
     )
 
+    # # TODO: remove again
+    # print_tree(0, sys.nodes, parts)
+
 
 def test_big_solar_with_steps():
     parts = circular_orbits(5000)
-    simple_sim(parts, 1e-3, 100, print_steps=True)
+    simple_sim(parts, 1e-3, 10, print_steps=True)
 
     sys = System.from_amount(len(parts))
 
@@ -60,4 +63,8 @@ def test_big_solar_with_steps():
 
 
 if __name__ == '__main__':
+    import time
+    t = time.time()
     test_big_solar_with_steps()
+    diff = time.time() - t
+    print(f'Time: {diff:.2f}')

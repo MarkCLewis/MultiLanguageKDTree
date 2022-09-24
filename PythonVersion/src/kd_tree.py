@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from numpy import sqrt
 
 from particle import f64x3, Particle, calc_pp_accel
-import particle
+
 
 MAX_PARTS: int = 7
 THETA: float = 0.3
