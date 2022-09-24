@@ -224,14 +224,13 @@ void simple_sim(Particle_array_t *bodies, double dt, int steps) {
     acc.ptr[i] = a;
   }
   KDTree_array_t tree = allocate_node_vec(bodies->size);
-  size_t_array_t indices = new_size_t_array_t(bodies->size);
+  size_t_array_t indices = new_range(0, bodies->size);
 
   for (int step = 0; step < steps; ++step) {
-    printf("Step: %d\n", step);
-
     for (size_t i = 0; i < bodies->size; ++i) {
       indices.ptr[i] = i;
     }
+
     build_tree(&indices, 0, bodies->size, bodies, 0, &tree);
     if (step % 10 == 0) {
       print_tree(step, &tree, bodies);

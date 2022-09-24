@@ -1,4 +1,4 @@
-use std::{time::Instant, fs::File, io::Write};
+use std::{fs::File, io::Write, time::Instant};
 
 use core_simd::*;
 
@@ -43,7 +43,7 @@ impl KDTree {
 }
 
 pub fn allocate_node_vec(num_parts: usize) -> Vec<KDTree> {
-    let num_nodes = 2 * (num_parts / (MAX_PARTS-1) + 1);
+    let num_nodes = 2 * (num_parts / (MAX_PARTS - 1) + 1);
     let mut ret = Vec::new();
     ret.resize(num_nodes, KDTree::leaf(0, NEGS));
     ret
@@ -132,8 +132,8 @@ pub fn build_tree<'a>(
         nodes[cur_node].m = m;
         nodes[cur_node].cm = cm;
         nodes[cur_node].size = size;
-        nodes[cur_node].left = cur_node+1;
-        nodes[cur_node].right = left+1;
+        nodes[cur_node].left = cur_node + 1;
+        nodes[cur_node].right = left + 1;
 
         right
     }
@@ -156,7 +156,7 @@ fn accel_recur(cur_node: usize, p: usize, particles: &Vec<Particle>, nodes: &Vec
         // println!("dist = {}, size = {}", dist, nodes[cur_node].size);
         if nodes[cur_node].size * nodes[cur_node].size < THETA * THETA * dist_sqr {
             let dist = f64::sqrt(dist_sqr);
-            let magi = f64x4::splat(-nodes[cur_node].m / (dist_sqr*dist));
+            let magi = f64x4::splat(-nodes[cur_node].m / (dist_sqr * dist));
             dp * magi
         } else {
             accel_recur(nodes[cur_node].left, p, particles, nodes)
@@ -178,7 +178,7 @@ pub fn simple_sim(bodies: &mut Vec<Particle>, dt: f64, steps: i64) {
     // let mut time = Instant::now();
     let mut tree = allocate_node_vec(bodies.len());
     let mut indices: Vec<usize> = (0..bodies.len()).collect();
-    
+
     for step in 0..steps {
         // if step % 100 == 0 {
         //     let elapsed_secs = time.elapsed().as_nanos() as f64 / 1e9;
@@ -189,9 +189,9 @@ pub fn simple_sim(bodies: &mut Vec<Particle>, dt: f64, steps: i64) {
             indices[i] = i;
         }
         build_tree(&mut indices, 0, bodies.len(), bodies, 0, &mut tree);
-        // if step % 100 == 0 {
-        //     print_tree(step, &tree, &bodies);
-        // }
+        if step % 10 == 0 {
+            print_tree(step, &tree, &bodies);
+        }
         for i in 0..bodies.len() {
             acc[i] = calc_accel(i, &bodies, &tree);
         }
@@ -206,17 +206,23 @@ pub fn simple_sim(bodies: &mut Vec<Particle>, dt: f64, steps: i64) {
 
 fn print_tree(step: i64, tree: &Vec<KDTree>, particles: &Vec<Particle>) -> std::io::Result<()> {
     let mut file = File::create(format!("tree{}.txt", step))?;
-    
+
     file.write_fmt(format_args!("{}\n", tree.len()))?;
     for n in tree {
         if n.num_parts > 0 {
             file.write_fmt(format_args!("L {}\n", n.num_parts))?;
             for i in 0..n.num_parts {
                 let p = n.particles[i];
-                file.write_fmt(format_args!("{} {} {}\n", particles[p].p[0], particles[p].p[1], particles[p].p[2]))?;
+                file.write_fmt(format_args!(
+                    "{} {} {}\n",
+                    particles[p].p[0], particles[p].p[1], particles[p].p[2]
+                ))?;
             }
         } else {
-            file.write_fmt(format_args!("I {} {} {} {}\n", n.split_dim, n.split_val, n.left, n.right))?;
+            file.write_fmt(format_args!(
+                "I {} {} {} {}\n",
+                n.split_dim, n.split_val, n.left, n.right
+            ))?;
         }
     }
 
@@ -329,5 +335,4 @@ mod tests {
             f64x4::splat(1e100),
         );
     }
-
 }

@@ -59,7 +59,7 @@ Particle_array_t circular_orbits(size_t n) {
   Particle star = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, 0.00465047, 1.0};
   particle_buf.ptr[0] = star;
 
-  for (size_t i = 0; i < n; ++i) {
+  for (size_t i = 1; i <= n; ++i) {
     double d = 0.1 + (i * 5.0 / n);
     double v = sqrt(1.0 / d);
     double theta = random_d() * 6.28;
