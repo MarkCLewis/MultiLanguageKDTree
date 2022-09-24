@@ -209,13 +209,17 @@ public class JKDTree {
       for (int i = 0; i < system.numBodies(); ++i) {
         indices[i] = i;
       }
+      var bstart = System.nanoTime();
       build_tree(indices, 0, system.numBodies(), system, 0, tree);
+      System.out.println("Build took: " + (System.nanoTime() - bstart)*1e-9);
       // if (step % 10 == 0) {
       //   print_tree(step, tree, system);
       // }
+      var astart = System.nanoTime();
       for (int i = 0; i < system.numBodies(); ++i) {
         calc_accel(i, system, tree, acc[i]);
       }
+      System.out.println("Build took: " + (System.nanoTime() - astart)*1e-9);
       for (int i = 0; i < system.numBodies(); ++i) {
         system.incV(i, 0, dt * acc[i][0]);
         system.incV(i, 1, dt * acc[i][1]);

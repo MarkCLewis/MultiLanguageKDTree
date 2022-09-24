@@ -21,7 +21,7 @@ public class JavaMain {
 
   static JSystem circular_orbits(int n) {
     var rand = RandomGenerator.getDefault();
-    var system = new JArraySystem(n+1);
+    var system = new JClassSystem(n+1);
     system.init(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00465047, 1.0 );
   
     for (int i = 0; i < n; ++i) {
