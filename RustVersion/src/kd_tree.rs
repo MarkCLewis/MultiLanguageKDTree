@@ -207,7 +207,7 @@ pub fn simple_sim(bodies: &mut Vec<Particle>, dt: f64, steps: i64) {
 fn print_tree(step: i64, tree: &Vec<KDTree>, particles: &Vec<Particle>) -> std::io::Result<()> {
     let mut file = File::create(format!("tree{}.txt", step))?;
     
-    file.write_fmt(format_args!("{}\n", particles.len()))?;
+    file.write_fmt(format_args!("{}\n", tree.len()))?;
     for n in tree {
         if n.num_parts > 0 {
             file.write_fmt(format_args!("L {}\n", n.num_parts))?;

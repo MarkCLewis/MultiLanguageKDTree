@@ -165,7 +165,7 @@ void print_tree(int step, const vector<KDTree> &tree, const vector<Particle> &pa
     sstream << "tree" << step << ".txt";
     std::ofstream file(sstream.str());
     
-    file << particles.size() << "\n";
+    file << tree.size() << "\n";
     for (const KDTree &n: tree) {
         if (n.num_parts > 0) {
             file << "L " << n.num_parts << "\n";
