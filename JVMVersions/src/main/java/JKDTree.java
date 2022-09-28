@@ -136,9 +136,9 @@ public class JKDTree {
     double dz = system.p(i, 2) - system.p(j, 2);
     var dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
     var magi = -system.m(j) / (dist * dist * dist);
-    if (j == 0 && Math.abs(1.0 - dist) < 1e-2) {
-      System.out.println("magi = " + magi);
-    }
+    // if (j == 0 && Math.abs(1.0 - dist) < 1e-2) {
+    //   System.out.println("magi = " + magi);
+    // }
     acc[0] += dx * magi;
     acc[1] += dy * magi;
     acc[2] += dz * magi;
@@ -209,17 +209,17 @@ public class JKDTree {
       for (int i = 0; i < system.numBodies(); ++i) {
         indices[i] = i;
       }
-      var bstart = System.nanoTime();
+      // var bstart = System.nanoTime();
       build_tree(indices, 0, system.numBodies(), system, 0, tree);
-      System.out.println("Build took: " + (System.nanoTime() - bstart)*1e-9);
+      // System.out.println("Build took: " + (System.nanoTime() - bstart)*1e-9);
       // if (step % 10 == 0) {
       //   print_tree(step, tree, system);
       // }
-      var astart = System.nanoTime();
+      // var astart = System.nanoTime();
       for (int i = 0; i < system.numBodies(); ++i) {
         calc_accel(i, system, tree, acc[i]);
       }
-      System.out.println("Build took: " + (System.nanoTime() - astart)*1e-9);
+      // System.out.println("Accel took: " + (System.nanoTime() - astart)*1e-9);
       for (int i = 0; i < system.numBodies(); ++i) {
         system.incV(i, 0, dt * acc[i][0]);
         system.incV(i, 1, dt * acc[i][1]);
