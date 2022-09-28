@@ -14,7 +14,7 @@ updated version of the n-body benchmark that is part of Benchmark Games
 | C++        | Compiling        | Needs more verification, but kD-tree looks good.                  |
 | Scala      | Stubbed          |                                                                   |
 | Java       | Stubbed          |                                                                   |
-| Python     | Needs validation | Needs more verification. Tests pass & KD-tree looks sensible.     |
-| JavaScript | It runs          | All the particles scatter so it's definitely wrong                |
+| Python     | Needs validation | Tests pass & KD-tree looks sensible.                              |
+| JavaScript | Needs validation | Tests pass & KD-tree looks sensible.                              |
 | GoLang     | Not Started      |                                                                   |
-| C          | Compiling        | Passes tests & KD-tree looks sensible.                            |
+| C          | Needs validation | Tests pass & KD-tree looks sensible.                              |

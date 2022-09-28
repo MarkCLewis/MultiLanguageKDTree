@@ -24,6 +24,22 @@ export class Vector3 {
     }
   }
 
+  set(i: number, val: number) {
+    switch (i) {
+      case 0:
+        this.x = val
+        break
+      case 1:
+        this.y = val
+        break
+      case 2:
+        this.z = val
+        break
+      default:
+        throw RangeError(`Vector3 only has 3 dimensions, asking for dim ${i}`);
+    }
+  }
+
   copy(): Vector3 {
     return new Vector3(this.x, this.y, this.z)
   }
@@ -103,6 +119,10 @@ export class Particle {
     this.v = vel
     this.r = r
     this.m = m
+  }
+
+  toString() {
+    return `@(${this.p.x}, ${this.p.y}, ${this.p.z})`
   }
 }
 
