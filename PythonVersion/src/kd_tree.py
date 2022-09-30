@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import numpy as np
+# import numpy as np
 from random import randrange
 from dataclasses import dataclass
-from numpy import sqrt
+# from numpy import sqrt
+from math import sqrt
 
-from particle import f64x3, Particle, calc_pp_accel
+from particle import F64x3, f64x3, Particle, calc_pp_accel
 
 
 MAX_PARTS: int = 7
@@ -35,7 +36,7 @@ class KDTree:
             None,  # type: ignore
             0.0,
             0.0,
-            np.zeros(3, dtype=np.float64),
+            F64x3(0, 0, 0),  # np.zeros(3, dtype=np.float64),
             0.0,
             None,  # type: ignore
             None  # type: ignore
@@ -77,16 +78,18 @@ class System:
             return cur_node
         else:
             # Pick split dim and value
-            min = np.ones(3, dtype=np.float64) * 1e100
-            max = np.ones(3, dtype=np.float64) * -1e100
+            min = 1e100 * F64x3(1, 1, 1)  # np.ones(3, dtype=np.float64)
+            max = -1e100 * F64x3(1, 1, 1)  # np.ones(3, dtype=np.float64)
             m = 0.0
-            cm = np.zeros(3, dtype=np.float64)
+            cm = F64x3(0, 0, 0)  # np.zeros(3, dtype=np.float64)
             for i in range(start, end):
                 m += particles[self.indices[i]].m
                 cm += particles[self.indices[i]].m * \
                     particles[self.indices[i]].p
-                min = np.minimum(min, particles[self.indices[i]].p)
-                max = np.maximum(max, particles[self.indices[i]].p)
+                # np.minimum(min, particles[self.indices[i]].p)
+                min = min.min(particles[self.indices[i]].p)
+                # np.maximum(max, particles[self.indices[i]].p)
+                max = max.max(particles[self.indices[i]].p)
 
             cm /= m
             split_dim = 0
@@ -157,7 +160,7 @@ class System:
 def accel_recur(cur_node: int, p: int, particles: list[Particle], nodes: list[KDTree]) -> f64x3:
     # println!("accel {}", cur_node)
     if nodes[cur_node].num_parts > 0:
-        acc = np.zeros(3, dtype=np.float64)
+        acc = F64x3(0, 0, 0)  # np.zeros(3, dtype=np.float64)
         for i in range(nodes[cur_node].num_parts):
             if nodes[cur_node].particles[i] != p:
                 acc += calc_pp_accel(particles[p],
@@ -182,8 +185,8 @@ def calc_accel(p: int, particles: list[Particle], nodes: list[KDTree]) -> f64x3:
 
 
 def simple_sim(bodies: list[Particle], dt: float, steps: int, print_steps: bool = False) -> None:
-    # dt_vec = f64x4:: splat(dt)
-    acc = np.zeros((len(bodies), 3), dtype=np.float64)
+    # acc = np.zeros((len(bodies), 3), dtype=np.float64)
+    acc = [F64x3(0, 0, 0) for _ in range(len(bodies))]
 
     # time = Instant: : now()
     sys = System.from_amount(len(bodies))
@@ -209,7 +212,7 @@ def simple_sim(bodies: list[Particle], dt: float, steps: int, print_steps: bool 
             bodies[i].v += dt * acc[i]
             dp = dt * bodies[i].v
             bodies[i].p += dp
-            acc[i] = np.zeros(3, dtype=np.float64)
+            acc[i] = F64x3(0, 0, 0)  # np.zeros(3, dtype=np.float64)
 
 
 def print_tree(step: int, tree: list[KDTree], particles: list[Particle]) -> None:

@@ -1,4 +1,4 @@
-import numpy as np
+# import numpy as np
 
 from particle import two_bodies, circular_orbits
 from kd_tree import System, recur_test_tree_struct, simple_sim, print_tree

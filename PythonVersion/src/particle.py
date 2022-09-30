@@ -5,12 +5,64 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from random import random
-import numpy as np
-from numpy import sqrt, cos, sin, sum
-import numpy.typing as npt
+from math import sqrt, cos, sin
+# import numpy as np
+# from numpy import sqrt, cos, sin, sum
+# import numpy.typing as npt
 
 
-f64x3 = npt.NDArray[np.float64]
+# f64x3 = npt.NDArray[np.float64]
+
+
+class F64x3:
+    __slots__ = ['x', 'y', 'z']
+
+    def __init__(self, x, y, z) -> None:
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def min(self, other):
+        return F64x3(min(self.x, other.x), min(self.y, other.y), min(self.z, other.z))
+
+    def max(self, other):
+        return F64x3(max(self.x, other.x), max(self.y, other.y), max(self.z, other.z))
+
+    def __add__(self, other):
+        return F64x3(self.x + other.x, self.y + other.y, self.z + other.z)
+
+    def __sub__(self, other):
+        return F64x3(self.x - other.x, self.y - other.y, self.z - other.z)
+
+    def __mul__(self, other):
+        if isinstance(other, F64x3):
+            return self.x * other.x + self.y * other.y + self.z * other.z
+        else:
+            return F64x3(self.x * other, self.y * other, self.z * other)
+
+    def __rmul__(self, other):
+        # multiplication is commutative
+        return self.__mul__(other)
+
+    def __truediv__(self, other):
+        return F64x3(self.x / other, self.y / other, self.z / other)
+
+    def __matmul__(self, other):
+        return self * other
+
+    def __getitem__(self, idx):
+        match idx:
+            case 0:
+                return self.x
+            case 1:
+                return self.y
+            case 2:
+                return self.z
+            case _:
+                raise IndexError(f"Got index {idx}, but only 0-2 are valid")
+
+
+f64x3 = F64x3
 
 
 @dataclass(slots=True, init=False)
@@ -18,10 +70,12 @@ class Particle:
     def __init__(self, p: f64x3 | tuple[float, float, float], v: f64x3 | tuple[float, float, float], r: float, m: float) -> None:
         self.r = r
         self.m = m
-        self.p = p if isinstance(
-            p, np.ndarray) else np.array(p, dtype=np.float64)
-        self.v = v if isinstance(
-            v, np.ndarray) else np.array(v, dtype=np.float64)
+        self.p = p if isinstance(p, F64x3) else F64x3(*p)
+        self.v = v if isinstance(v, F64x3) else F64x3(*v)
+        # self.p = p if isinstance(
+        #     p, np.ndarray) else np.array(p, dtype=np.float64)
+        # self.v = v if isinstance(
+        #     v, np.ndarray) else np.array(v, dtype=np.float64)
 
     p: f64x3
     v: f64x3
