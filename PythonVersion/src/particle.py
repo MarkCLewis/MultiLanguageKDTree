@@ -34,11 +34,20 @@ class F64x3:
     def __sub__(self, other):
         return F64x3(self.x - other.x, self.y - other.y, self.z - other.z)
 
+    def __imul__(self, other):
+        self.x *= other
+        self.y *= other
+        self.z *= other
+        return self
+
+    def __iadd__(self, other):
+        self.x += other.x
+        self.y += other.y
+        self.z += other.z
+        return self
+
     def __mul__(self, other):
-        if isinstance(other, F64x3):
-            return self.x * other.x + self.y * other.y + self.z * other.z
-        else:
-            return F64x3(self.x * other, self.y * other, self.z * other)
+        return F64x3(self.x * other, self.y * other, self.z * other)
 
     def __rmul__(self, other):
         # multiplication is commutative
@@ -47,19 +56,23 @@ class F64x3:
     def __truediv__(self, other):
         return F64x3(self.x / other, self.y / other, self.z / other)
 
+    def __itruediv__(self, other):
+        self.x /= other
+        self.y /= other
+        self.z /= other
+        return self
+
     def __matmul__(self, other):
-        return self * other
+        return self.x * other.x + self.y * other.y + self.z * other.z
 
     def __getitem__(self, idx):
-        match idx:
-            case 0:
-                return self.x
-            case 1:
-                return self.y
-            case 2:
-                return self.z
-            case _:
-                raise IndexError(f"Got index {idx}, but only 0-2 are valid")
+        if idx == 0:
+            return self.x
+        elif idx == 1:
+            return self.y
+        elif idx == 2:
+            return self.z
+        raise IndexError(f"Got index {idx}, but only 0-2 are valid")
 
 
 f64x3 = F64x3
