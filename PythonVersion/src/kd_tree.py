@@ -185,18 +185,9 @@ def calc_accel(p: int, particles: list[Particle], nodes: list[KDTree]) -> f64x3:
 
 
 def simple_sim(bodies: list[Particle], dt: float, steps: int, print_steps: bool = False) -> None:
-    # acc = np.zeros((len(bodies), 3), dtype=np.float64)
-    acc = [F64x3(0, 0, 0) for _ in range(len(bodies))]
-
-    # time = Instant: : now()
     sys = System.from_amount(len(bodies))
 
     for step in range(steps):
-        # if step % 100 == 0 {
-        # elapsed_secs = time.elapsed().as_nanos() as f64 / 1e9
-        # println!("Step = {}, duration = {}, n = {}, nodes = {}", step, elapsed_secs, len(bodies), len(tree))
-        #     time = Instant:: now()
-        # }
         if print_steps:
             print(step)
         sys.indices = list(range(len(bodies)))
@@ -205,15 +196,12 @@ def simple_sim(bodies: list[Particle], dt: float, steps: int, print_steps: bool 
         if step % 10 == 0:
             print_tree(step, sys.nodes, bodies)
 
-        acc = [calc_accel(i, bodies, sys.nodes) for i in range(len(bodies))]
-        # for i in range(len(bodies)):
-        #     acc[i] = calc_accel(i, bodies, sys.nodes)
+        acc = [calc_accel(i, bodies, sys.nodes)
+               for i in range(len(bodies))]
 
-        for i in range(len(bodies)):
-            bodies[i].v += dt * acc[i]
-            dp = dt * bodies[i].v
-            bodies[i].p += dp
-            acc[i] = F64x3(0, 0, 0)  # np.zeros(3, dtype=np.float64)
+        for body, acc_i in zip(bodies, acc):
+            body.v += dt * acc_i
+            body.p += dt * body.v
 
 
 def print_tree(step: int, tree: list[KDTree], particles: list[Particle]) -> None:

@@ -123,59 +123,9 @@ def circular_orbits(n: int) -> list[Particle]:
     return particles
 
 
-def simple_sim(bodies: list[Particle], dt: float) -> None:
-    dt_vec = (dt, dt, dt)
-    acc = np.zeros((len(bodies), 3))
-
-    for step in range(1, 1000001):
-        for i in range(len(bodies) - 1):
-            for j in range(i + 1, len(bodies)):
-                calc_accel(i, j, bodies[i], bodies[j], acc)
-
-        for i in range(len(bodies)):
-            bodies[i].v += dt_vec * acc[i]
-            dp = dt_vec * bodies[i].v
-            bodies[i].p += dp
-            acc[i] = (0, 0, 0)
-
-        if step % 10000 == 0:
-            print(
-                f"{step} {bodies[1].p[0]} {bodies[1].p[1]} {bodies[1].v[0]} {bodies[1].v[1]}"
-            )
-
-
-def distance_sqr(x1: f64x3, x2: f64x3) -> np.float64:
-    dp = x1 - x2
-    return dp @ dp  # type: ignore
-
-
-def distance(x1: f64x3, x2: f64x3) -> np.float64:
-    return sqrt(distance_sqr(x1, x2))
-
-
-def calc_accel(i: int, j: int, pi: Particle, pj: Particle, acc: npt.NDArray[np.float64]) -> None:
-    dp = pi.p - pj.p
-    dp2 = dp @ dp
-    dist = sqrt(dp2)
-
-    magi = -pj.m / (dist * dist * dist)
-    acc[i] += dp * magi
-
-    magj = pi.m / (dist * dist * dist)
-    acc[j] += dp * magj
-
-
 def calc_pp_accel(pi: Particle, pj: Particle) -> f64x3:
     dp = pi.p - pj.p
     dp2 = dp @ dp
     dist = sqrt(dp2)
     magi = -pj.m / (dist * dist * dist)
-    return dp * magi
-
-
-def calc_cm_accel(pi: Particle, m: float, cm: f64x3) -> f64x3:
-    dp = pi.p - cm
-    dp2 = dp @ dp
-    dist = sqrt(dp2)
-    magi = -m / (dist * dist * dist)
     return dp * magi
