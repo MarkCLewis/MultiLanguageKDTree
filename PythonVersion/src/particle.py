@@ -10,34 +10,36 @@ from numpy import sqrt, cos, sin, sum
 import numpy.typing as npt
 
 
-f64x3 = npt.NDArray[np.float64]
+f64Arr = npt.NDArray[np.float64]
+
+Particles = tuple[f64Arr, f64Arr, f64Arr, f64Arr]
 
 
-@dataclass(slots=True, init=False)
-class Particle:
-    def __init__(self, p: f64x3 | tuple[float, float, float], v: f64x3 | tuple[float, float, float], r: float, m: float) -> None:
-        self.r = r
-        self.m = m
-        self.p = p if isinstance(
-            p, np.ndarray) else np.array(p, dtype=np.float64)
-        self.v = v if isinstance(
-            v, np.ndarray) else np.array(v, dtype=np.float64)
+def make_particle_arrays(particles: list[tuple[tuple[float, float, float], tuple[float, float, float], float, float]]) -> Particles:
+    length = len(particles)
+    p = np.zeros((length, 3), dtype=np.float64)
+    v = np.zeros((length, 3), dtype=np.float64)
+    r = np.zeros(length, dtype=np.float64)
+    m = np.zeros(length, dtype=np.float64)
 
-    p: f64x3
-    v: f64x3
-    r: float
-    m: float
+    for i, (p_i, v_i, r_i, m_i) in enumerate(particles):
+        p[i][:] = p_i
+        v[i][:] = v_i
+        r[i] = r_i
+        m[i] = m_i
 
-
-def two_bodies() -> list[Particle]:
-    return [
-        Particle((0, 0, 0), (0, 0, 0), 1, 1),
-        Particle((1, 0, 0), (0, 1, 0), 1e-4, 1e-20)
-    ]
+    return p, v, r, m
 
 
-def circular_orbits(n: int) -> list[Particle]:
-    particles = [Particle((0, 0, 0), (0, 0, 0), 0.00465047, 1)]
+def two_bodies() -> Particles:
+    return make_particle_arrays([
+        ((0, 0, 0), (0, 0, 0), 1, 1),
+        ((1, 0, 0), (0, 1, 0), 1e-4, 1e-20)
+    ])
+
+
+def circular_orbits(n: int) -> Particles:
+    particles = [((0, 0, 0), (0, 0, 0), 0.00465047, 1)]
 
     for i in range(n):
         d = 0.1 + (i * 5 / n)
@@ -47,68 +49,29 @@ def circular_orbits(n: int) -> list[Particle]:
         y = d * sin(theta)
         vx = -v * sin(theta)
         vy = v * cos(theta)
-        particles.append(Particle(
+        particles.append((
             (x, y, 0),
             (vx, vy, 0),
             1e-14,
             1e-7,
         ))
-    return particles
+    return make_particle_arrays(particles)
 
 
-def simple_sim(bodies: list[Particle], dt: float) -> None:
-    dt_vec = (dt, dt, dt)
-    acc = np.zeros((len(bodies), 3))
-
-    for step in range(1, 1000001):
-        for i in range(len(bodies) - 1):
-            for j in range(i + 1, len(bodies)):
-                calc_accel(i, j, bodies[i], bodies[j], acc)
-
-        for i in range(len(bodies)):
-            bodies[i].v += dt_vec * acc[i]
-            dp = dt_vec * bodies[i].v
-            bodies[i].p += dp
-            acc[i] = (0, 0, 0)
-
-        if step % 10000 == 0:
-            print(
-                f"{step} {bodies[1].p[0]} {bodies[1].p[1]} {bodies[1].v[0]} {bodies[1].v[1]}"
-            )
-
-
-def distance_sqr(x1: f64x3, x2: f64x3) -> np.float64:
-    dp = x1 - x2
-    return dp @ dp  # type: ignore
-
-
-def distance(x1: f64x3, x2: f64x3) -> np.float64:
-    return sqrt(distance_sqr(x1, x2))
-
-
-def calc_accel(i: int, j: int, pi: Particle, pj: Particle, acc: npt.NDArray[np.float64]) -> None:
-    dp = pi.p - pj.p
+def calc_pp_accel(pi, pj, mj):
+    dp = pi - pj
     dp2 = dp @ dp
     dist = sqrt(dp2)
-
-    magi = -pj.m / (dist * dist * dist)
-    acc[i] += dp * magi
-
-    magj = pi.m / (dist * dist * dist)
-    acc[j] += dp * magj
-
-
-def calc_pp_accel(pi: Particle, pj: Particle) -> f64x3:
-    dp = pi.p - pj.p
-    dp2 = dp @ dp
-    dist = sqrt(dp2)
-    magi = -pj.m / (dist * dist * dist)
+    magi = -mj / (dist * dist * dist)
     return dp * magi
 
+# def calc_pp_accel(particles_i: Particles, particles_j: Particles) -> npt.NDArray[np.float64]:
+#     pi, vi, ri, mi = particles_i
+#     pj, vj, rj, mj = particles_j
 
-def calc_cm_accel(pi: Particle, m: float, cm: f64x3) -> f64x3:
-    dp = pi.p - cm
-    dp2 = dp @ dp
-    dist = sqrt(dp2)
-    magi = -m / (dist * dist * dist)
-    return dp * magi
+#     dp = pi - pj
+#     dp2 = np.sum(dp*dp, axis=1)
+
+#     dist = np.sqrt(dp2)
+#     magi = -pj.m / (dist * dist * dist)
+#     return dp * magi
