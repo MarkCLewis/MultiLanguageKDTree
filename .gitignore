@@ -3,7 +3,7 @@ tree*.txt
 # Python related
 .mypy_cache
 *.pyc
-PythonVersion/init
+PythonVersions/**/init
 
 # MacOS
 .DS_Store
