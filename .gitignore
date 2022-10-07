@@ -4,3 +4,6 @@ tree*.txt
 .mypy_cache
 *.pyc
 PythonVersion/init
+
+# MacOS
+.DS_Store

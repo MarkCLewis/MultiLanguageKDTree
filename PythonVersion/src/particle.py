@@ -64,14 +64,3 @@ def calc_pp_accel(pi, pj, mj):
     dist = sqrt(dp2)
     magi = -mj / (dist * dist * dist)
     return dp * magi
-
-# def calc_pp_accel(particles_i: Particles, particles_j: Particles) -> npt.NDArray[np.float64]:
-#     pi, vi, ri, mi = particles_i
-#     pj, vj, rj, mj = particles_j
-
-#     dp = pi - pj
-#     dp2 = np.sum(dp*dp, axis=1)
-
-#     dist = np.sqrt(dp2)
-#     magi = -pj.m / (dist * dist * dist)
-#     return dp * magi
