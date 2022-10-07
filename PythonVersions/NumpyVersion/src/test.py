@@ -5,22 +5,22 @@ from kd_tree import System, recur_test_tree_struct, simple_sim, print_tree
 
 
 def test_single_node():
-    parts = two_bodies()
-    sys = System.from_amount(len(parts))
+    p, v, r, m = two_bodies()
+    sys = System.from_amount(len(p))
     assert len(sys.nodes) == 2
-    sys.build_tree(0, len(parts), parts, 0)
-    assert sys.nodes[0].num_parts == len(parts)
+    sys.build_tree(0, len(p), (p, v, r, m), 0)
+    assert sys.nodes[0].num_parts == len(p)
 
 
 def test_two_leaves():
-    parts = circular_orbits(11)
-    sys = System.from_amount(len(parts))
+    p, v, r, m = circular_orbits(11)
+    sys = System.from_amount(len(p))
     assert len(sys.nodes) == 4  # In the rust version, this fails also
-    sys.build_tree(0, len(parts), parts, 0)
+    sys.build_tree(0, len(p), (p, v, r, m), 0)
     recur_test_tree_struct(
         0,
         sys.nodes,
-        parts,
+        (p, v, r, m),
         np.ones(3, dtype=np.float64) * -1e100,
         np.ones(3, dtype=np.float64) * 1e100,
     )
@@ -31,13 +31,13 @@ def test_two_leaves():
 
 
 def test_big_solar():
-    parts = circular_orbits(5000)
-    sys = System.from_amount(len(parts))
-    sys.build_tree(0, len(parts), parts, 0)
+    p, v, r, m = circular_orbits(5000)
+    sys = System.from_amount(len(p))
+    sys.build_tree(0, len(p), (p, v, r, m), 0)
     recur_test_tree_struct(
         0,
         sys.nodes,
-        parts,
+        (p, v, r, m),
         np.ones(3, dtype=np.float64) * (-1e100),
         np.ones(3, dtype=np.float64) * (1e100),
     )
@@ -47,16 +47,16 @@ def test_big_solar():
 
 
 def test_big_solar_with_steps():
-    parts = circular_orbits(5000)
-    simple_sim(parts, 1e-3, 10, print_steps=True)
+    p, v, r, m = circular_orbits(5000)
+    simple_sim((p, v, r, m), 1e-3, 10, print_steps=True)
 
-    sys = System.from_amount(len(parts))
+    sys = System.from_amount(len(p))
 
-    sys.build_tree(0, len(parts), parts, 0)
+    sys.build_tree(0, len(p), (p, v, r, m), 0)
     recur_test_tree_struct(
         0,
         sys.nodes,
-        parts,
+        (p, v, r, m),
         np.ones(3, dtype=np.float64) * (-1e100),
         np.ones(3, dtype=np.float64) * (1e100),
     )
