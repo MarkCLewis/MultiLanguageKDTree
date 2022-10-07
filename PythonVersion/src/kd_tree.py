@@ -23,7 +23,7 @@ class KDTree:
     split_dim: int
     split_val: float
     m: float
-    cm: tuple[float, float, float]
+    cm: tuple[float, float, float]  # de facto np.array
     size: float
     left: int
     right: int
@@ -48,14 +48,15 @@ def allocate_node_vec(num_parts: int) -> list[KDTree]:
     return [KDTree.leaf(0, []) for _ in range(num_nodes)]
 
 
-@dataclass(slots=True)
 class System:
     indices: list[int]
     nodes: list[KDTree]
 
-    @staticmethod
-    def from_amount(n: int) -> System:
-        return System(list(range(n)), allocate_node_vec(n))
+    __slots__ = ['indices', 'nodes']
+
+    def __init__(self, n: int) -> None:
+        self.indices = None
+        self.nodes = allocate_node_vec(n)
 
     # Returns the index of the last Node used in the construction.
     def build_tree(self,
@@ -200,18 +201,14 @@ def simple_sim(bodies: Particles, dt: float, steps: int, print_steps: bool = Fal
 
     acc = np.zeros((len(p), 3), dtype=np.float64)
 
-    # time = Instant: : now()
-    sys = System.from_amount(len(p))
+    sys = System(len(p))
+
+    dv = np.zeros((len(p), 3), dtype=np.float64)
 
     for step in range(steps):
-        # if step % 100 == 0 {
-        # elapsed_secs = time.elapsed().as_nanos() as f64 / 1e9
-        # println!("Step = {}, duration = {}, n = {}, nodes = {}", step, elapsed_secs, len(bodies), len(tree))
-        #     time = Instant:: now()
-        # }
         if print_steps:
             print(step)
-        sys.indices = list(range(len(p)))
+        sys.indices = [i for i in range(len(p))]
 
         sys.build_tree(0, len(p), (p, v, r, m), 0)
         if step % 10 == 0:
@@ -220,15 +217,11 @@ def simple_sim(bodies: Particles, dt: float, steps: int, print_steps: bool = Fal
         for i in range(len(p)):
             acc[i] = calc_accel(i, (p, v, r, m), sys.nodes)
 
-        v[:] += dt * acc
-        p[:] += dt * v
+        acc[:] *= dt  # dt * acc
 
-        # for i in range(len(bodies)):
-        #     bodies[i].v += dt * acc[i]
-        #     dp = dt * bodies[i].v
-        #     bodies[i].p += dp
-
-        acc.fill(0)
+        v[:] += acc
+        np.multiply(dt, v, out=dv)
+        p[:] += dv  # dt * v
 
 
 def print_tree(step: int, tree: list[KDTree], particles: Particles) -> None:
