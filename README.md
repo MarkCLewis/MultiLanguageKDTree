@@ -11,10 +11,10 @@ updated version of the n-body benchmark that is part of Benchmark Games
 | Language   | Basic Status     | Note                                                              |
 | ---------- | ---------------- | ----------------------------------------------------------------- |
 | Rust       | Complete         | All versions currently use SIMD and no dynamic memory after init. |
-| C++        | Compiling        | Needs more verification, but kD-tree looks good.                  |
-| Scala      | Stubbed          |                                                                   |
-| Java       | Stubbed          |                                                                   |
-| Python     | Needs validation | Tests pass & KD-tree looks sensible.                              |
-| JavaScript | Needs validation | Tests pass & KD-tree looks sensible.                              |
+| C++        | Complete         | Worked. Benchmarked. Faster with Clang than gcc.                  |
+| Scala      | Complete         | This works, but for some reason it is slow (not as slow as Python) Not taking the time right now to investigate. |
+| Java       | Complete         | Benchmarked with both array and OO versions. |
+| Python     | Complete         | Benchmarked and HORRIBLY slow.              |
+| JavaScript | Complete         | Benchmarked. Not nearly as slow as Python.   |
 | GoLang     | Not Started      |                                                                   |
-| C          | Needs validation | Tests pass & KD-tree looks sensible.                              |
+| C          | Complete         | Benchmarked. Faster with Clang than gcc.    |

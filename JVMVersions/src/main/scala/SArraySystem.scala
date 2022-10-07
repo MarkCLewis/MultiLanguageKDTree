@@ -1,13 +1,13 @@
 class SArraySystem(val numBodies: Int) extends SSystem {
-  val pos = Array.fill(3*numBodies)(0.0)
-  val vel = Array.fill(3*numBodies)(0.0)
-  val radius = Array.fill(numBodies)(0.0)
-  val mass = Array.fill(numBodies)(0.0)
+  private val pos = Array.fill(3*numBodies)(0.0)
+  private val vel = Array.fill(3*numBodies)(0.0)
+  private val radius = Array.fill(numBodies)(0.0)
+  private val mass = Array.fill(numBodies)(0.0)
 
-  def p(index: Int, dim: Int): Double = pos(3*index + dim)
-  def v(index: Int, dim: Int): Double = vel(3*index + dim)
-  def r(index: Int): Double = radius(index)
-  def m(index: Int): Double = mass(index)
+  inline def p(index: Int, dim: Int): Double = pos(3*index + dim)
+  inline def v(index: Int, dim: Int): Double = vel(3*index + dim)
+  inline def r(index: Int): Double = radius(index)
+  inline def m(index: Int): Double = mass(index)
 
   def init(index: Int, x: Double, y: Double, z: Double, vx: Double, vy: Double, vz: Double, rad: Double, mass: Double): Unit = {
     pos(index*3 + 0) = x

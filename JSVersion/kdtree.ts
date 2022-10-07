@@ -200,9 +200,9 @@ export function simple_sim(bodies: Particle[], dt: number, steps: number) {
       indices[i] = i
     }
     build_tree(indices, 0, bodies.length, bodies, 0, tree)
-    if (step % 10 === 0) {
-      print_tree(step, tree, bodies)
-    }
+//    if (step % 10 === 0) {
+//      print_tree(step, tree, bodies)
+//    }
     for (let i = 0; i < bodies.length; i++) {
       acc[i] = calc_accel(i, bodies, tree)
     }

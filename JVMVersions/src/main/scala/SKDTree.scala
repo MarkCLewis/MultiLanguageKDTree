@@ -208,7 +208,6 @@ object SKDTree {
     val indices = Array.fill(system.numBodies)(Particle(0));
 
     for (step <- 0 until steps) {
-      println(step)
       for (i <- 0 until system.numBodies) {
         indices(i) = Particle(i)
       }
