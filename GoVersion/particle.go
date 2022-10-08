@@ -11,9 +11,9 @@ type Particle struct {
 
 func Two_bodies() []Particle {
 	bodies := []Particle{
-		Particle{[3]float64{0.0, 0.0, 0.0},
+		{[3]float64{0.0, 0.0, 0.0},
 			[3]float64{0.0, 0.0, 0.0}, 1.0, 1.0},
-		Particle{[3]float64{1.0, 0.0, 0.0},
+		{[3]float64{1.0, 0.0, 0.0},
 			[3]float64{0.0, 1.0, 0.0}, 1e-4, 1e-20},
 	}
 	return bodies

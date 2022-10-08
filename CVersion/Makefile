@@ -1,7 +1,7 @@
 # C Flags, -g, -Ofast
 
 CFLAGS := -Wall -pedantic -std=c17 -Ofast -fomit-frame-pointer
-CC := gcc
+CC := clang
 LDLIBS := -lm
 INC :=
 

@@ -193,8 +193,8 @@ def simple_sim(bodies: list[Particle], dt: float, steps: int, print_steps: bool 
         sys.indices = list(range(len(bodies)))
 
         sys.build_tree(0, len(bodies), bodies, 0)
-        if step % 10 == 0:
-            print_tree(step, sys.nodes, bodies)
+#        if step % 10 == 0:
+#           print_tree(step, sys.nodes, bodies)
 
         acc = [calc_accel(i, bodies, sys.nodes)
                for i in range(len(bodies))]

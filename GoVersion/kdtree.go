@@ -1,19 +1,21 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
+	"os"
 )
 
 const (
-	MAX_PARTS int     = 7
-	THETA     float64 = 0.3
+	maxParts int     = 7
+	THETA    float64 = 0.3
 )
 
 type KDTree struct {
 	// For leaves
 	num_parts int
-	particles [MAX_PARTS]int
+	particles [maxParts]int
 
 	// For internal nodes
 	split_dim int
@@ -28,7 +30,7 @@ type KDTree struct {
 func empty_leaf() KDTree {
 	return KDTree{
 		0,
-		[MAX_PARTS]int{},
+		[maxParts]int{},
 		-1,
 		0.0,
 		0.0,
@@ -40,7 +42,7 @@ func empty_leaf() KDTree {
 }
 
 func allocate_node_vec(num_parts int) []KDTree {
-	num_nodes := 2 * (num_parts/(MAX_PARTS-1) + 1)
+	num_nodes := 20 * (num_parts/(maxParts-1) + 1)
 	ret := make([]KDTree, num_nodes)
 	return ret
 }
@@ -52,18 +54,18 @@ func build_tree(
 	end int,
 	particles []Particle,
 	cur_node int,
-	nodes []KDTree,
+	nodes *[]KDTree,
 ) int {
 	// println!("start = {} end = {} cur_node = {}", start, end, cur_node);
 	np := end - start
 	// println!("s = {}, e = {}, cn = {}", start, end, cur_node);
-	if np <= MAX_PARTS {
-		for cur_node >= len(nodes) {
-			nodes = append(nodes, empty_leaf())
+	if np <= maxParts {
+		for cur_node >= len(*nodes) {
+			*nodes = append(*nodes, empty_leaf())
 		}
-		nodes[cur_node].num_parts = np
+		(*nodes)[cur_node].num_parts = np
 		for i := 0; i < np; i++ {
-			nodes[cur_node].particles[i] = indices[start+i]
+			(*nodes)[cur_node].particles[i] = indices[start+i]
 		}
 		return cur_node
 	} else {
@@ -133,17 +135,17 @@ func build_tree(
 		left := build_tree(indices, start, mid, particles, cur_node+1, nodes)
 		right := build_tree(indices, mid, end, particles, left+1, nodes)
 
-		for cur_node >= len(nodes) {
-			nodes = append(nodes, empty_leaf())
+		for cur_node >= len(*nodes) {
+			*nodes = append(*nodes, empty_leaf())
 		}
-		nodes[cur_node].num_parts = 0
-		nodes[cur_node].split_dim = split_dim
-		nodes[cur_node].split_val = split_val
-		nodes[cur_node].m = m
-		nodes[cur_node].cm = cm
-		nodes[cur_node].size = size
-		nodes[cur_node].left = cur_node + 1
-		nodes[cur_node].right = left + 1
+		(*nodes)[cur_node].num_parts = 0
+		(*nodes)[cur_node].split_dim = split_dim
+		(*nodes)[cur_node].split_val = split_val
+		(*nodes)[cur_node].m = m
+		(*nodes)[cur_node].cm = cm
+		(*nodes)[cur_node].size = size
+		(*nodes)[cur_node].left = cur_node + 1
+		(*nodes)[cur_node].right = left + 1
 
 		return right
 	}
@@ -190,17 +192,12 @@ func Simple_sim(bodies []Particle, dt float64, steps int) {
 	indices := make([]int, len(bodies))
 
 	for step := 0; step < steps; step++ {
-		// if step % 100 == 0 {
-		//     let elapsed_secs = time.elapsed().as_nanos() as f64 / 1e9;
-		//     println!("Step = {}, duration = {}, n = {}, nodes = {}", step, elapsed_secs, bodies.len(), tree.len());
-		//     time = Instant::now();
-		// }
 		for i := 0; i < len(bodies); i++ {
 			indices[i] = i
 		}
-		build_tree(indices, 0, len(bodies), bodies, 0, tree)
-		// if step % 10 == 0 {
-		//     print_tree(step, &tree, &bodies);
+		build_tree(indices, 0, len(bodies), bodies, 0, &tree)
+		// if step%10 == 0 {
+		// 	print_tree(step, tree, bodies)
 		// }
 		for i := 0; i < len(bodies); i++ {
 			acc[i] = calc_accel(i, bodies, tree)
@@ -222,134 +219,30 @@ func Simple_sim(bodies []Particle, dt float64, steps int) {
 	}
 }
 
-// func print_tree(step int, tree []KDTree, particles []Particle) {
-//     let mut file = File::create(format!("tree{}.txt", step))?;
+func print_tree(step int, tree []KDTree, particles []Particle) {
+	fname := fmt.Sprintf("tree%d.txt", step)
+	file, err := os.Create(fname)
+	if err != nil {
+		panic(err)
+	}
 
-//     file.write_fmt(format_args!("{}\n", tree.len()))?;
-//     for n in tree {
-//         if n.num_parts > 0 {
-//             file.write_fmt(format_args!("L {}\n", n.num_parts))?;
-//             for i in 0..n.num_parts {
-//                 let p = n.particles[i];
-//                 file.write_fmt(format_args!(
-//                     "{} {} {}\n",
-//                     particles[p].p[0], particles[p].p[1], particles[p].p[2]
-//                 ))?;
-//             }
-//         } else {
-//             file.write_fmt(format_args!(
-//                 "I {} {} {} {}\n",
-//                 n.split_dim, n.split_val, n.left, n.right
-//             ))?;
-//         }
-//     }
-
-//     Ok(())
-// }
-
-// fn recur_test_tree_struct(
-//     node: usize,
-//     nodes: &Vec<KDTree>,
-//     particles: &Vec<Particle>,
-//     mut min: [f64; 3],
-//     mut max: [f64; 3],
-// ) {
-//     if nodes[node].num_parts > 0 {
-//         for index in 0..nodes[node].num_parts {
-//             let i = nodes[node].particles[index];
-//             for dim in 0..2 {
-//                 assert!(
-//                     particles[i].p[dim] >= min[dim],
-//                     "Particle dim {} is below min. i={} p={} min={}",
-//                     dim,
-//                     i,
-//                     particles[i].p[dim],
-//                     min[dim]
-//                 );
-//                 assert!(
-//                     particles[i].p[dim] < max[dim],
-//                     "Particle dim {} is above max. i={} p={} max={}",
-//                     dim,
-//                     i,
-//                     particles[i].p[dim],
-//                     max[dim]
-//                 );
-//             }
-//         }
-//     } else {
-//         let split_dim = nodes[node].split_dim;
-//         let tmin = min[split_dim];
-//         let tmax = max[split_dim];
-//         max[split_dim] = nodes[node].split_val;
-//         recur_test_tree_struct(nodes[node].left, nodes, particles, min, max);
-//         max[split_dim] = tmax;
-//         min[split_dim] = nodes[node].split_val;
-//         recur_test_tree_struct(nodes[node].right, nodes, particles, min, max);
-//         min[split_dim] = tmin;
-//     }
-// }
-
-// #[cfg(test)]
-// mod tests {
-//     use crate::{array_kd_tree, array_particle};
-
-//     #[test]
-//     fn single_node() {
-//         let parts = array_particle::two_bodies();
-//         let mut node_vec = array_kd_tree::allocate_node_vec(parts.len());
-//         assert_eq!(node_vec.len(), 2);
-//         let mut indices: Vec<usize> = (0..parts.len()).collect();
-//         array_kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
-//         assert_eq!(node_vec[0].num_parts, parts.len());
-//     }
-
-//     #[test]
-//     fn two_leaves() {
-//         let parts = array_particle::circular_orbits(11);
-//         let mut node_vec = array_kd_tree::allocate_node_vec(parts.len());
-//         assert_eq!(node_vec.len(), 6);
-//         let mut indices: Vec<usize> = (0..parts.len()).collect();
-//         array_kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
-//         array_kd_tree::recur_test_tree_struct(
-//             0,
-//             &node_vec,
-//             &parts,
-//             [-1e100, -1e100, -1e100],
-//             [1e100, 1e100, 1e100],
-//         );
-//         assert_eq!(node_vec[0].num_parts, 0);
-//         assert_eq!(node_vec[1].num_parts + node_vec[2].num_parts, 12);
-//     }
-
-//     #[test]
-//     fn big_solar() {
-//         let parts = array_particle::circular_orbits(5000);
-//         let mut node_vec = array_kd_tree::allocate_node_vec(parts.len());
-//         let mut indices: Vec<usize> = (0..parts.len()).collect();
-//         array_kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
-//         array_kd_tree::recur_test_tree_struct(
-//             0,
-//             &node_vec,
-//             &parts,
-//             [-1e100, -1e100, -1e100],
-//             [1e100, 1e100, 1e100],
-//         );
-//     }
-
-//     #[test]
-//     fn big_solar_with_steps() {
-//         let mut parts = array_particle::circular_orbits(5000);
-//         array_kd_tree::simple_sim(&mut parts, 1e-3, 10);
-
-//         let mut node_vec = array_kd_tree::allocate_node_vec(parts.len());
-//         let mut indices: Vec<usize> = (0..parts.len()).collect();
-//         array_kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
-//         array_kd_tree::recur_test_tree_struct(
-//             0,
-//             &node_vec,
-//             &parts,
-//             [-1e100, -1e100, -1e100],
-//             [1e100, 1e100, 1e100],
-//         );
-//     }
-// }
+	len_line := fmt.Sprintf("%d\n", len(tree))
+	file.WriteString(len_line)
+	for _, n := range tree {
+		if n.num_parts > 0 {
+			line := fmt.Sprintf("L %d\n", n.num_parts)
+			file.WriteString(line)
+			for i := 0; i < n.num_parts; i++ {
+				p := n.particles[i]
+				node_line := fmt.Sprintf(
+					"%e %e %e\n",
+					particles[p].p[0], particles[p].p[1], particles[p].p[2],
+				)
+				file.WriteString(node_line)
+			}
+		} else {
+			leaf_line := fmt.Sprintf("I %d %e %d %d\n", n.split_dim, n.split_val, n.left, n.right)
+			file.WriteString(leaf_line)
+		}
+	}
+}

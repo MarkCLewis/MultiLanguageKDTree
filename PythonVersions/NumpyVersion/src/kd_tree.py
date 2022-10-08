@@ -211,8 +211,8 @@ def simple_sim(bodies: Particles, dt: float, steps: int, print_steps: bool = Fal
         sys.indices = [i for i in range(len(p))]
 
         sys.build_tree(0, len(p), (p, v, r, m), 0)
-        if step % 10 == 0:
-            print_tree(step, sys.nodes, (p, v, r, m))
+#        if step % 10 == 0:
+#            print_tree(step, sys.nodes, (p, v, r, m))
 
         for i in range(len(p)):
             acc[i] = calc_accel(i, (p, v, r, m), sys.nodes)

@@ -16,5 +16,5 @@ updated version of the n-body benchmark that is part of Benchmark Games
 | Java       | Complete         | Benchmarked with both array and OO versions. |
 | Python     | Complete         | Benchmarked and HORRIBLY slow.              |
 | JavaScript | Complete         | Benchmarked. Not nearly as slow as Python.   |
-| GoLang     | Not Started      |                                                                   |
+| GoLang     | Complete         | Benchmarking in progress.           |
 | C          | Complete         | Benchmarked. Faster with Clang than gcc.    |
