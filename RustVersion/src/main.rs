@@ -6,7 +6,7 @@ mod simd_particle;
 // mod array_kd_tree;
 
 use clap::Parser;
-use std::{env, time::Instant};
+use std::time::Instant;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
