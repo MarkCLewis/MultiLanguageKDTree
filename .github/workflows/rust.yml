@@ -11,6 +11,8 @@ jobs:
           profile: minimal
           toolchain: nightly
           components: rustfmt, clippy
+      - name: Set toolchain
+        run: rustup default nightly
       - name: Check Clippy Linter
         uses: actions-rs/cargo@v1
         with:
