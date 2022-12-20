@@ -1,0 +1,21 @@
+on: push
+name: Clippy check
+jobs:
+  
+  cargo-clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          components: rustfmt, clippy
+      - name: Set toolchain
+        run: rustup default nightly
+      - name: Check Clippy Linter
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all-features --all-targets --manifest-path RustVersion/Cargo.toml -- -D warnings
+
