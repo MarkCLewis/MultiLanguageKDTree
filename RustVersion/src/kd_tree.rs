@@ -1,6 +1,6 @@
-use std::{fs::File, io::Write, time::Instant};
+use std::{fs::File, io::Write};
 
-use core_simd::*;
+use core_simd::simd::*;
 
 use crate::simd_particle::*;
 
@@ -179,7 +179,7 @@ pub fn simple_sim(bodies: &mut Vec<Particle>, dt: f64, steps: i64) {
     let mut tree = allocate_node_vec(bodies.len());
     let mut indices: Vec<usize> = (0..bodies.len()).collect();
 
-    for step in 0..steps {
+    for _ in 0..steps {
         // if step % 100 == 0 {
         //     let elapsed_secs = time.elapsed().as_nanos() as f64 / 1e9;
         //     println!("Step = {}, duration = {}, n = {}, nodes = {}", step, elapsed_secs, bodies.len(), tree.len());
@@ -204,6 +204,7 @@ pub fn simple_sim(bodies: &mut Vec<Particle>, dt: f64, steps: i64) {
     }
 }
 
+#[allow(dead_code)]
 fn print_tree(step: i64, tree: &Vec<KDTree>, particles: &Vec<Particle>) -> std::io::Result<()> {
     let mut file = File::create(format!("tree{}.txt", step))?;
 
@@ -229,6 +230,7 @@ fn print_tree(step: i64, tree: &Vec<KDTree>, particles: &Vec<Particle>) -> std::
     Ok(())
 }
 
+#[allow(dead_code)]
 fn recur_test_tree_struct(
     node: usize,
     nodes: &Vec<KDTree>,
@@ -274,7 +276,7 @@ fn recur_test_tree_struct(
 #[cfg(test)]
 mod tests {
     use crate::{kd_tree, simd_particle};
-    use core_simd::*;
+    use core_simd::simd::*;
 
     #[test]
     fn single_node() {
