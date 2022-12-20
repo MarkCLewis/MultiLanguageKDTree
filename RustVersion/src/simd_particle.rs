@@ -9,24 +9,24 @@ pub struct Particle {
 
 #[allow(dead_code)]
 pub fn two_bodies() -> Vec<Particle> {
-    let mut bodies = Vec::new();
-    bodies.push(Particle {
-        p: f64x4::splat(0.0),
-        v: f64x4::splat(0.0),
-        r: 1.0,
-        m: 1.0,
-    });
-    bodies.push(Particle {
-        p: f64x4::from_array([1.0, 0.0, 0.0, 0.0]),
-        v: f64x4::from_array([0.0, 1.0, 0.0, 0.0]),
-        r: 1e-4,
-        m: 1e-20,
-    });
-    bodies
+    vec![
+        Particle {
+            p: f64x4::splat(0.0),
+            v: f64x4::splat(0.0),
+            r: 1.0,
+            m: 1.0,
+        },
+        Particle {
+            p: f64x4::from_array([1.0, 0.0, 0.0, 0.0]),
+            v: f64x4::from_array([0.0, 1.0, 0.0, 0.0]),
+            r: 1e-4,
+            m: 1e-20,
+        },
+    ]
 }
 
 pub fn circular_orbits(n: usize) -> Vec<Particle> {
-    let mut particle_buf = vec![];
+    let mut particle_buf = Vec::with_capacity(n + 1);
     particle_buf.push(Particle {
         p: f64x4::splat(0.0),
         v: f64x4::splat(0.0),
@@ -37,7 +37,7 @@ pub fn circular_orbits(n: usize) -> Vec<Particle> {
     for i in 0..n {
         let d = 0.1 + ((i as f64) * 5.0 / (n as f64));
         let v = f64::sqrt(1.0 / d);
-        let theta = fastrand::f64() * 6.28;
+        let theta = fastrand::f64() * std::f64::consts::TAU;
         let x = d * f64::cos(theta);
         let y = d * f64::sin(theta);
         let vx = -v * f64::sin(theta);
@@ -92,7 +92,7 @@ pub fn distance(x1: f64x4, x2: f64x4) -> f64 {
     f64::sqrt(distance_sqr(x1, x2))
 }
 
-fn calc_accel(i: usize, j: usize, pi: &Particle, pj: &Particle, acc: &mut Vec<f64x4>) {
+fn calc_accel(i: usize, j: usize, pi: &Particle, pj: &Particle, acc: &mut [f64x4]) {
     let dp = pi.p - pj.p;
     let dp2 = dp * dp;
     let dist = f64::sqrt(dp2.reduce_sum());

@@ -19,18 +19,18 @@ pub struct KDTree {
     // For internal nodes
     split_dim: usize,
     split_val: f64,
-    m: f64,
-    cm: f64x4,
-    size: f64,
-    left: usize,
-    right: usize,
+    m:         f64,
+    cm:        f64x4,
+    size:      f64,
+    left:      usize,
+    right:     usize,
 }
 
 impl KDTree {
-    pub fn leaf<'a>(num_parts: usize, particles: [usize; MAX_PARTS]) -> KDTree {
+    pub fn leaf(num_parts: usize, particles: [usize; MAX_PARTS]) -> KDTree {
         KDTree {
-            num_parts: num_parts,
-            particles: particles,
+            num_parts,
+            particles,
             split_dim: usize::MAX,
             split_val: 0.0,
             m: 0.0,
@@ -50,7 +50,7 @@ pub fn allocate_node_vec(num_parts: usize) -> Vec<KDTree> {
 }
 
 // Returns the index of the last Node used in the construction.
-pub fn build_tree<'a>(
+pub fn build_tree(
     indices: &mut Vec<usize>,
     start: usize,
     end: usize,
@@ -66,9 +66,8 @@ pub fn build_tree<'a>(
             nodes.resize(cur_node + 1, KDTree::leaf(0, NEGS));
         }
         nodes[cur_node].num_parts = np;
-        for i in 0..np {
-            nodes[cur_node].particles[i] = indices[start + i]
-        }
+        nodes[cur_node].particles[..np].copy_from_slice(&indices[start..(np + start)]);
+
         cur_node
     } else {
         // Pick split dim and value
@@ -109,12 +108,11 @@ pub fn build_tree<'a>(
                 }
             }
             indices.swap(s, high);
-            if high < mid {
-                s = high + 1;
-            } else if high > mid {
-                e = high;
-            } else {
-                s = e;
+            use std::cmp::Ordering::*;
+            match high.cmp(&mid) {
+                Less => s = high + 1,
+                Greater => e = high,
+                Equal => s = e,
             }
         }
         let split_val = particles[indices[mid]].p[split_dim];
@@ -185,16 +183,18 @@ pub fn simple_sim(bodies: &mut Vec<Particle>, dt: f64, steps: i64) {
         //     println!("Step = {}, duration = {}, n = {}, nodes = {}", step, elapsed_secs, bodies.len(), tree.len());
         //     time = Instant::now();
         // }
-        for i in 0..bodies.len() {
-            indices[i] = i;
+        for (new_ix, old_ix) in indices.iter_mut().enumerate().take(bodies.len()) {
+            *old_ix = new_ix;
         }
+
         build_tree(&mut indices, 0, bodies.len(), bodies, 0, &mut tree);
         // if step % 10 == 0 {
         //     print_tree(step, &tree, &bodies);
         // }
-        for i in 0..bodies.len() {
-            acc[i] = calc_accel(i, &bodies, &tree);
+        for (index, item) in acc.iter_mut().enumerate().take(bodies.len()) {
+            *item = calc_accel(index, bodies, &tree)
         }
+
         for i in 0..bodies.len() {
             bodies[i].v += dt_vec * acc[i];
             let dp = dt_vec * bodies[i].v;
@@ -205,8 +205,8 @@ pub fn simple_sim(bodies: &mut Vec<Particle>, dt: f64, steps: i64) {
 }
 
 #[allow(dead_code)]
-fn print_tree(step: i64, tree: &Vec<KDTree>, particles: &Vec<Particle>) -> std::io::Result<()> {
-    let mut file = File::create(format!("tree{}.txt", step))?;
+fn print_tree(step: i64, tree: &Vec<KDTree>, particles: &[Particle]) -> std::io::Result<()> {
+    let mut file = File::create(format!("tree{step}.txt"))?;
 
     file.write_fmt(format_args!("{}\n", tree.len()))?;
     for n in tree {

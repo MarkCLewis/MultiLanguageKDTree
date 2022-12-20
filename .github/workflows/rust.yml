@@ -9,7 +9,6 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
-      - uses: Swatinem/rust-cache@v1
       - name: Check Clippy Linter
         uses: actions-rs/cargo@v1
         with:
