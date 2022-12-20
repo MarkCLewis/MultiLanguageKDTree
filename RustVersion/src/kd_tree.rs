@@ -33,11 +33,11 @@ impl KDTree {
             particles,
             split_dim: usize::MAX,
             split_val: 0.0,
-            m: 0.0,
-            cm: f64x4::splat(0.0),
-            size: 0.0,
-            left: usize::MAX,
-            right: usize::MAX,
+            m:         0.0,
+            cm:        f64x4::splat(0.0),
+            size:      0.0,
+            left:      usize::MAX,
+            right:     usize::MAX,
         }
     }
 }
