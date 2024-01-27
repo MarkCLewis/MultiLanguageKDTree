@@ -11,33 +11,28 @@ const THETA: f64 = 0.3;
 const NEGS: [usize; MAX_PARTS] = [usize::MAX; MAX_PARTS];
 
 #[derive(Clone, Copy)]
-pub struct KDTree {
-    // For leaves
-    num_parts: usize,
-    particles: [usize; MAX_PARTS],
+pub enum KDTree {
+    Leaf {
+        num_parts: usize,
+        leaf_parts: [usize; MAX_PARTS]
+    },
 
-    // For internal nodes
-    split_dim: usize,
-    split_val: f64,
-    m:         f64,
-    cm:        f64x4,
-    size:      f64,
-    left:      usize,
-    right:     usize,
+    Internal {
+        split_dim: usize,
+        split_val: f64,
+        m: f64,
+        cm: f64x4,
+        size: f64,
+        left: usize,
+        right: usize
+    }
 }
 
 impl KDTree {
-    pub fn leaf(num_parts: usize, particles: [usize; MAX_PARTS]) -> KDTree {
-        KDTree {
-            num_parts,
-            particles,
-            split_dim: usize::MAX,
-            split_val: 0.0,
-            m:         0.0,
-            cm:        f64x4::splat(0.0),
-            size:      0.0,
-            left:      usize::MAX,
-            right:     usize::MAX,
+    pub fn leaf<'a>(num_parts: usize, particles: [usize; MAX_PARTS]) -> KDTree {
+        KDTree::Leaf {
+            num_parts: num_parts,
+            leaf_parts: particles,
         }
     }
 }
@@ -65,9 +60,11 @@ pub fn build_tree(
         if cur_node >= nodes.len() {
             nodes.resize(cur_node + 1, KDTree::leaf(0, NEGS));
         }
-        nodes[cur_node].num_parts = np;
-        nodes[cur_node].particles[..np].copy_from_slice(&indices[start..(np + start)]);
-
+        let mut parts = [0; MAX_PARTS];
+        for i in 0..np {
+            parts[i] = indices[start + i]
+        }
+        nodes[cur_node] = KDTree::Leaf { num_parts: np, leaf_parts: parts };
         cur_node
     } else {
         // Pick split dim and value
@@ -124,14 +121,7 @@ pub fn build_tree(
         if cur_node >= nodes.len() {
             nodes.resize(cur_node + 1, KDTree::leaf(0, NEGS));
         }
-        nodes[cur_node].num_parts = 0;
-        nodes[cur_node].split_dim = split_dim;
-        nodes[cur_node].split_val = split_val;
-        nodes[cur_node].m = m;
-        nodes[cur_node].cm = cm;
-        nodes[cur_node].size = size;
-        nodes[cur_node].left = cur_node + 1;
-        nodes[cur_node].right = left + 1;
+        nodes[cur_node] = KDTree::Internal { split_dim, split_val, m, cm, size, left: cur_node + 1, right: left+1 };
 
         right
     }
@@ -139,26 +129,29 @@ pub fn build_tree(
 
 fn accel_recur(cur_node: usize, p: usize, particles: &Vec<Particle>, nodes: &Vec<KDTree>) -> f64x4 {
     // println!("accel {}", cur_node);
-    if nodes[cur_node].num_parts > 0 {
-        let mut acc = f64x4::splat(0.0);
-        for i in 0..(nodes[cur_node].num_parts) {
-            if nodes[cur_node].particles[i] != p {
-                acc += calc_pp_accel(&particles[p], &particles[nodes[cur_node].particles[i]]);
+    match nodes[cur_node] {
+        KDTree::Leaf { num_parts, leaf_parts} => {
+            let mut acc = f64x4::splat(0.0);
+            for i in 0..num_parts {
+                if leaf_parts[i] != p {
+                    acc += calc_pp_accel(&particles[p], &particles[leaf_parts[i]]);
+                }
             }
+            acc
         }
-        acc
-    } else {
-        let dp = particles[p].p - nodes[cur_node].cm;
-        let dp2 = dp * dp;
-        let dist_sqr = dp2.reduce_sum();
-        // println!("dist = {}, size = {}", dist, nodes[cur_node].size);
-        if nodes[cur_node].size * nodes[cur_node].size < THETA * THETA * dist_sqr {
-            let dist = f64::sqrt(dist_sqr);
-            let magi = f64x4::splat(-nodes[cur_node].m / (dist_sqr * dist));
-            dp * magi
-        } else {
-            accel_recur(nodes[cur_node].left, p, particles, nodes)
-                + accel_recur(nodes[cur_node].right, p, particles, nodes)
+        KDTree::Internal { m, cm, size, left, right, .. } => {
+            let dp = particles[p].p - cm;
+            let dp2 = dp * dp;
+            let dist_sqr = dp2.reduce_sum();
+            // println!("dist = {}, size = {}", dist, size);
+            if size * size < THETA * THETA * dist_sqr {
+                let dist = f64::sqrt(dist_sqr);
+                let magi = f64x4::splat(-m / (dist_sqr * dist));
+                dp * magi
+            } else {
+                accel_recur(left, p, particles, nodes)
+                    + accel_recur(right, p, particles, nodes)
+            }
         }
     }
 }
@@ -210,20 +203,23 @@ fn print_tree(step: i64, tree: &Vec<KDTree>, particles: &[Particle]) -> std::io:
 
     file.write_fmt(format_args!("{}\n", tree.len()))?;
     for n in tree {
-        if n.num_parts > 0 {
-            file.write_fmt(format_args!("L {}\n", n.num_parts))?;
-            for i in 0..n.num_parts {
-                let p = n.particles[i];
+        match n {
+            KDTree::Leaf { num_parts, leaf_parts } => {
+                file.write_fmt(format_args!("L {}\n", num_parts))?;
+                for i in 0..*num_parts {
+                    let p = leaf_parts[i];
+                    file.write_fmt(format_args!(
+                        "{} {} {}\n",
+                        particles[p].p[0], particles[p].p[1], particles[p].p[2]
+                    ))?;
+                }
+            }
+            KDTree::Internal { split_dim, split_val, left, right, .. } => {
                 file.write_fmt(format_args!(
-                    "{} {} {}\n",
-                    particles[p].p[0], particles[p].p[1], particles[p].p[2]
+                    "I {} {} {} {}\n",
+                    split_dim, split_val, left, right
                 ))?;
             }
-        } else {
-            file.write_fmt(format_args!(
-                "I {} {} {} {}\n",
-                n.split_dim, n.split_val, n.left, n.right
-            ))?;
         }
     }
 
@@ -238,38 +234,41 @@ fn recur_test_tree_struct(
     mut min: f64x4,
     mut max: f64x4,
 ) {
-    if nodes[node].num_parts > 0 {
-        for index in 0..nodes[node].num_parts {
-            let i = nodes[node].particles[index];
-            for dim in 0..2 {
-                assert!(
-                    particles[i].p[dim] >= min[dim],
-                    "Particle dim {} is below min. i={} p={} min={}",
-                    dim,
-                    i,
-                    particles[i].p[dim],
-                    min[dim]
-                );
-                assert!(
-                    particles[i].p[dim] < max[dim],
-                    "Particle dim {} is above max. i={} p={} max={}",
-                    dim,
-                    i,
-                    particles[i].p[dim],
-                    max[dim]
-                );
+    match nodes[node] {
+        KDTree::Leaf { num_parts, leaf_parts } => {
+            for index in 0..num_parts {
+                let i = leaf_parts[index];
+                for dim in 0..2 {
+                    assert!(
+                        particles[i].p[dim] >= min[dim],
+                        "Particle dim {} is below min. i={} p={} min={}",
+                        dim,
+                        i,
+                        particles[i].p[dim],
+                        min[dim]
+                    );
+                    assert!(
+                        particles[i].p[dim] < max[dim],
+                        "Particle dim {} is above max. i={} p={} max={}",
+                        dim,
+                        i,
+                        particles[i].p[dim],
+                        max[dim]
+                    );
+                }
             }
         }
-    } else {
-        let split_dim = nodes[node].split_dim;
-        let tmin = min[split_dim];
-        let tmax = max[split_dim];
-        max[split_dim] = nodes[node].split_val;
-        recur_test_tree_struct(nodes[node].left, nodes, particles, min, max);
-        max[split_dim] = tmax;
-        min[split_dim] = nodes[node].split_val;
-        recur_test_tree_struct(nodes[node].right, nodes, particles, min, max);
-        min[split_dim] = tmin;
+        KDTree::Internal { split_dim, split_val, left, right, .. } => {
+            let split_dim = split_dim;
+            let tmin = min[split_dim];
+            let tmax = max[split_dim];
+            max[split_dim] = split_val;
+            recur_test_tree_struct(left, nodes, particles, min, max);
+            max[split_dim] = tmax;
+            min[split_dim] = split_val;
+            recur_test_tree_struct(right, nodes, particles, min, max);
+            min[split_dim] = tmin;
+        }
     }
 }
 
@@ -285,7 +284,10 @@ mod tests {
         assert_eq!(node_vec.len(), 2);
         let mut indices: Vec<usize> = (0..parts.len()).collect();
         kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
-        assert_eq!(node_vec[0].num_parts, parts.len());
+        match node_vec[0] {
+            kd_tree::KDTree::Leaf { num_parts, .. } => assert_eq!(num_parts, parts.len()),
+            _ => assert!(false, "Root isn't leaf of right size when small.")
+        };
     }
 
     #[test]
@@ -302,8 +304,13 @@ mod tests {
             f64x4::splat(-1e100),
             f64x4::splat(1e100),
         );
-        assert_eq!(node_vec[0].num_parts, 0);
-        assert_eq!(node_vec[1].num_parts + node_vec[2].num_parts, 12);
+        assert!(std::matches!(node_vec[0], kd_tree::KDTree::Internal { .. }));
+        match (node_vec[1], node_vec[2]) {
+            (kd_tree::KDTree::Leaf { num_parts: n1, ..}, kd_tree::KDTree::Leaf {num_parts: n2, ..}) => {
+                assert_eq!(n1 + n2, 12);
+            }
+            _ => assert!(false, "Node vectors weren't leaves.")
+        }
     }
 
     #[test]
