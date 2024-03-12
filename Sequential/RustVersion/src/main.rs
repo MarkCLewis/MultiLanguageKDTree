@@ -1,8 +1,8 @@
 #![feature(portable_simd)]
 
-mod kd_tree;
-mod simd_particle;
-// mod array_particle;
+mod kd_tree_box;
+// mod simd_particle;
+mod array_particle;
 // mod array_kd_tree;
 
 use clap::Parser;
@@ -26,8 +26,8 @@ fn main() {
     let dt = 1e-3; // * 2.0 * std::f64::consts::PI;
 
     let start = Instant::now();
-    kd_tree::simple_sim(
-        &mut simd_particle::circular_orbits(args.number),
+    kd_tree_box::simple_sim(
+        &mut array_particle::circular_orbits(args.number),
         dt,
         args.steps,
     );
