@@ -1,6 +1,7 @@
 #include<random>
 #include<fstream>
 #include<sstream>
+#include<omp.h>
 
 #include "kdtree.h"
 
@@ -190,6 +191,7 @@ void simple_sim(vector<Particle> &bodies, double dt, int steps) {
     indices.resize(bodies.size());
     
     for (int step = 0; step < steps; ++step) {
+	#pragma omp parallel for
         for (size_t i = 0; i < bodies.size(); ++i) {
             indices[i] = i;
         }
@@ -197,9 +199,11 @@ void simple_sim(vector<Particle> &bodies, double dt, int steps) {
         // if (step % 10 == 0) {
         //     print_tree(step, tree, bodies);
         // }
+	#pragma omp parallel for
         for (size_t i = 0; i < bodies.size(); ++i) {
             calc_accel(i, bodies, tree, acc[i].v);
         }
+	#pragma omp parallel for
         for (size_t i = 0; i < bodies.size(); ++i) {
             bodies[i].v[0] += dt * acc[i].v[0];
             bodies[i].v[1] += dt * acc[i].v[1];

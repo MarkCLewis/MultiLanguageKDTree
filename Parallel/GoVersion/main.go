@@ -9,20 +9,25 @@ import (
 )
 
 func main() {
-	n, err := strconv.Atoi(os.Args[1])
+	steps, err := strconv.Atoi(os.Args[1])
+	if err != nil {
+		fmt.Println("You need to provide a number of steps.")
+		return
+	}
+	n, err := strconv.Atoi(os.Args[2])
 	if err != nil {
 		fmt.Println("You need to provide a number of particles and number of steps.")
 		return
 	}
-	steps, err := strconv.Atoi(os.Args[2])
+	p, err := strconv.Atoi(os.Args[3])
 	if err != nil {
-		fmt.Println("You need to provide a number of steps.")
+		fmt.Println("You need to provide a number of threads.")
 		return
 	}
 
 	dt := 1e-3 // * 2.0 * std::f64::consts::PI;
 
-	Simple_sim(circular_orbits(n), dt, steps)
+	Simple_sim(circular_orbits(n), dt, steps, p)
 }
 
 func circular_orbits(n int) []Particle {

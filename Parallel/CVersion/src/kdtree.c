@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 
 #include "kdtree.h"
 #include "particle.h"
@@ -227,17 +228,20 @@ void simple_sim(Particle_array_t *bodies, double dt, int steps) {
   size_t_array_t indices = new_range(0, bodies->size);
 
   for (int step = 0; step < steps; ++step) {
+    #pragma omp parallel for
     for (size_t i = 0; i < bodies->size; ++i) {
       indices.ptr[i] = i;
     }
 
     build_tree(&indices, 0, bodies->size, bodies, 0, &tree);
-    if (step % 10 == 0) {
-      print_tree(step, &tree, bodies);
-    }
+    // if (step % 10 == 0) {
+    //   print_tree(step, &tree, bodies);
+    // }
+    #pragma omp parallel for
     for (size_t i = 0; i < bodies->size; ++i) {
       calc_accel(i, bodies, &tree, acc.ptr[i].v);
     }
+    #pragma omp parallel for
     for (size_t i = 0; i < bodies->size; ++i) {
       bodies->ptr[i].v[0] += dt * acc.ptr[i].v[0];
       bodies->ptr[i].v[1] += dt * acc.ptr[i].v[1];

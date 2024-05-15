@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.random.RandomGenerator;
+import java.util.stream.IntStream;
 
 public class JKDTree {
   static final int MAX_PARTS = 7;
@@ -206,9 +207,9 @@ public class JKDTree {
     int[] indices = new int[system.numBodies()];
 
     for (int step = 0; step < steps; ++step) {
-      for (int i = 0; i < system.numBodies(); ++i) {
+      IntStream.range(0, system.numBodies()).parallel().forEach(i -> {
         indices[i] = i;
-      }
+      });
       // var bstart = System.nanoTime();
       build_tree(indices, 0, system.numBodies(), system, 0, tree);
       // System.out.println("Build took: " + (System.nanoTime() - bstart)*1e-9);
@@ -216,11 +217,11 @@ public class JKDTree {
       //   print_tree(step, tree, system);
       // }
       // var astart = System.nanoTime();
-      for (int i = 0; i < system.numBodies(); ++i) {
+      IntStream.range(0, system.numBodies()).parallel().forEach(i -> {
         calc_accel(i, system, tree, acc[i]);
-      }
+      });
       // System.out.println("Accel took: " + (System.nanoTime() - astart)*1e-9);
-      for (int i = 0; i < system.numBodies(); ++i) {
+      IntStream.range(0, system.numBodies()).parallel().forEach(i -> {
         system.incV(i, 0, dt * acc[i][0]);
         system.incV(i, 1, dt * acc[i][1]);
         system.incV(i, 2, dt * acc[i][2]);
@@ -230,7 +231,7 @@ public class JKDTree {
         acc[i][0] = 0.0;
         acc[i][1] = 0.0;
         acc[i][2] = 0.0;
-      }
+      });
     }
   }
 

@@ -194,12 +194,10 @@ pub fn simple_sim(bodies: &mut Vec<Particle>, dt: f64, steps: i64) {
         //     println!("Step = {}, duration = {}, n = {}, nodes = {}", step, elapsed_secs, bodies.len(), tree.len());
         //     time = Instant::now();
         // }
-        // TODO: Make this run in parallel.
-        for i in 0..bodies.len() {
-            indices[i] = i;
-        }
-        // indices.into_par_iter().for_each(|&mut i| i = 5);
-        // (0..bodies.len()).into_par_iter().for_each_with(&indices, |indices, i| indices[i] = i );
+        // for i in 0..bodies.len() {
+        //     indices[i] = i;
+        // }
+        indices.par_iter_mut().enumerate().for_each(|(i, ind)| *ind = i);
         build_tree(&mut indices, 0, bodies.len(), bodies, 0, &mut tree);
         // if step % 10 == 0 {
         //     print_tree(step, &tree, &bodies);

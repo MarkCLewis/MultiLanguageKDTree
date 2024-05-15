@@ -5,6 +5,8 @@ import (
 	"math"
 	"math/rand"
 	"os"
+
+	"github.com/dgravesa/go-parallel/parallel"
 )
 
 const (
@@ -186,23 +188,23 @@ func calc_accel(p int, particles []Particle, nodes []KDTree) [3]float64 {
 	return accel_recur(0, p, particles, nodes)
 }
 
-func Simple_sim(bodies []Particle, dt float64, steps int) {
+func Simple_sim(bodies []Particle, dt float64, steps int, p int) {
 	acc := make([][3]float64, len(bodies))
 	tree := allocate_node_vec(len(bodies))
 	indices := make([]int, len(bodies))
 
 	for step := 0; step < steps; step++ {
-		for i := 0; i < len(bodies); i++ {
+		parallel.WithNumGoroutines(p).For(len(bodies), func(i, _ int) {
 			indices[i] = i
-		}
+		})
 		build_tree(indices, 0, len(bodies), bodies, 0, &tree)
 		// if step%10 == 0 {
 		// 	print_tree(step, tree, bodies)
 		// }
-		for i := 0; i < len(bodies); i++ {
+		parallel.WithNumGoroutines(p).For(len(bodies), func(i, _ int) {
 			acc[i] = calc_accel(i, bodies, tree)
-		}
-		for i := 0; i < len(bodies); i++ {
+		})
+		parallel.WithNumGoroutines(p).For(len(bodies), func(i, _ int) {
 			bodies[i].v[0] += dt * acc[i][0]
 			bodies[i].v[1] += dt * acc[i][1]
 			bodies[i].v[2] += dt * acc[i][2]
@@ -215,7 +217,7 @@ func Simple_sim(bodies []Particle, dt float64, steps int) {
 			acc[i][0] = 0.0
 			acc[i][1] = 0.0
 			acc[i][2] = 0.0
-		}
+		})
 	}
 }
 

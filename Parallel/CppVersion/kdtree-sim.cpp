@@ -1,4 +1,5 @@
 #include<iostream>
+#include<omp.h>
 
 #include "particle.h"
 #include "kdtree.h"
@@ -10,8 +11,9 @@ int main(int argc, char *argv[]) {
 	}
 	std::cout << "Running sim.\n";
 
-	int n = atoi(argv[1]);
-	int steps = atoi(argv[2]);
+	int steps = atoi(argv[1]);
+	int n = atoi(argv[2]);
+        omp_set_num_threads(std::atoi(argv[3]));
 
 	double dt = 1e-3; // * 2.0 * std::f64::consts::PI;
 

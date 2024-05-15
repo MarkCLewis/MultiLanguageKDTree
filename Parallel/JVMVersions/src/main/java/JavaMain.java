@@ -8,8 +8,8 @@ public class JavaMain {
     }
     System.out.println("Running sim.");
   
-    int n = Integer.parseInt(args[0]);
-    int steps = Integer.parseInt(args[1]);
+    int steps = Integer.parseInt(args[0]);
+    int n = Integer.parseInt(args[1]);
   
     double dt = 1e-3; // * 2.0 * std::f64::consts::PI;
   

@@ -1,8 +1,8 @@
 # C Flags, -g, -Ofast
 
-CFLAGS := -Wall -pedantic -std=c17 -Ofast -fomit-frame-pointer
+CFLAGS := -Wall -pedantic -std=c17 -Ofast -fomit-frame-pointer -fopenmp
 CC := clang
-LDLIBS := -lm
+LDLIBS := -lm -fopenmp
 INC :=
 
 # run make -j 8, seems to be fastest
@@ -23,7 +23,7 @@ TEST_OBJ := $(BUILD_DIR)/test.o
 
 
 $(OUT): $(OBJS) $(MAIN_OBJ)
-	$(CC) -o $@ $^ $(LDLIBS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 # run-test: test
 # 	./$<
