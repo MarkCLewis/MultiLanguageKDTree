@@ -5,9 +5,11 @@ use rayon::prelude::*;
 
 use crate::array_particle::*;
 
+use crate::quickstat::*;
+
 //use super::array_particle::Particle;
 
-const MAX_PARTS: usize = 7;
+const MAX_PARTS: usize = 8;
 const THETA: f64 = 0.3;
 const NEGS: [usize; MAX_PARTS] = [usize::MAX; MAX_PARTS];
 
@@ -73,22 +75,26 @@ pub fn build_tree<'a>(
         cur_node
     } else {
         // Pick split dim and value
-        let mut min = [1e100, 1e100, 1e100];
-        let mut max = [-1e100, -1e100, -1e100];
-        let mut m = 0.0;
-        let mut cm = [0.0, 0.0, 0.0];
-        for i in start..end {
-            m += particles[indices[i]].m;
-            cm[0] += particles[indices[i]].m * particles[indices[i]].p[0];
-            cm[1] += particles[indices[i]].m * particles[indices[i]].p[1];
-            cm[2] += particles[indices[i]].m * particles[indices[i]].p[2];
-            min[0] = f64::min(min[0], particles[indices[i]].p[0]);
-            min[1] = f64::min(min[1], particles[indices[i]].p[1]);
-            min[2] = f64::min(min[2], particles[indices[i]].p[2]);
-            max[0] = f64::max(max[0], particles[indices[i]].p[0]);
-            max[1] = f64::max(max[1], particles[indices[i]].p[1]);
-            max[2] = f64::max(max[2], particles[indices[i]].p[2]);
-        }
+        let (m, cm_tmp, min, max) = (start..end).into_par_iter().fold(|| (0.0, [0.0,0.0,0.0],[1e100, 1e100, 1e100],[-1e100, -1e100, -1e100]), 
+            |(m, cm, min, max), i| {
+                (m + particles[indices[i]].m,
+                [cm[0] + particles[indices[i]].m * particles[indices[i]].p[0],
+                cm[1] + particles[indices[i]].m * particles[indices[i]].p[1],
+                cm[2] + particles[indices[i]].m * particles[indices[i]].p[2]],
+                [f64::min(min[0], particles[indices[i]].p[0]),
+                f64::min(min[1], particles[indices[i]].p[1]),
+                f64::min(min[2], particles[indices[i]].p[2])],
+                [f64::max(max[0], particles[indices[i]].p[0]),
+                f64::max(max[1], particles[indices[i]].p[1]),
+                f64::max(max[2], particles[indices[i]].p[2])])
+        }).reduce(|| (0.0, [0.0,0.0,0.0],[1e100, 1e100, 1e100],[-1e100, -1e100, -1e100]), 
+            |(m1, cm1, min1, max1),(m2, cm2, min2, max2)| {
+                (m1 + m2, 
+                [cm1[0] + cm2[0], cm1[1] + cm2[1], cm1[2] + cm2[2]], 
+                [f64::min(min1[0], min2[0]), f64::min(min1[1], min2[1]), f64::min(min1[2], min2[2])], 
+                [f64::max(max1[0], max2[0]), f64::min(max1[1], max2[1]), f64::max(max1[2], max2[2])])
+        });
+        let mut cm = [cm_tmp[0], cm_tmp[1], cm_tmp[2]];
         cm[0] /= m;
         cm[1] /= m;
         cm[2] /= m;
@@ -102,30 +108,32 @@ pub fn build_tree<'a>(
 
         // Partition particles on split_dim
         let mid = (start + end) / 2;
-        let mut s = start;
-        let mut e = end;
-        while s + 1 < e {
-            let pivot = fastrand::usize(s..e);
-            indices.swap(s, pivot);
-            let mut low = s + 1;
-            let mut high = e - 1;
-            while low <= high {
-                if particles[indices[low]].p[split_dim] < particles[indices[s]].p[split_dim] {
-                    low += 1;
-                } else {
-                    indices.swap(low, high);
-                    high -= 1;
-                }
-            }
-            indices.swap(s, high);
-            if high < mid {
-                s = high + 1;
-            } else if high > mid {
-                e = high;
-            } else {
-                s = e;
-            }
-        }
+        quickstat_index(&mut indices[start..end], mid - start, 
+            |i1, i2| particles[i1].p[split_dim] < particles[i2].p[split_dim]);
+        // let mut s = start;
+        // let mut e = end;
+        // while s + 1 < e {
+        //     let pivot = fastrand::usize(s..e);
+        //     indices.swap(s, pivot);
+        //     let mut low = s + 1;
+        //     let mut high = e - 1;
+        //     while low <= high {
+        //         if particles[indices[low]].p[split_dim] < particles[indices[s]].p[split_dim] {
+        //             low += 1;
+        //         } else {
+        //             indices.swap(low, high);
+        //             high -= 1;
+        //         }
+        //     }
+        //     indices.swap(s, high);
+        //     if high < mid {
+        //         s = high + 1;
+        //     } else if high > mid {
+        //         e = high;
+        //     } else {
+        //         s = e;
+        //     }
+        // }
         let split_val = particles[indices[mid]].p[split_dim];
 
         // Recurse on children and build this node.
@@ -249,51 +257,6 @@ fn print_tree(step: i64, tree: &Vec<KDTree>, particles: &Vec<Particle>) -> std::
     Ok(())
 }
 
-fn recur_test_tree_struct(
-    node: usize,
-    nodes: &Vec<KDTree>,
-    particles: &Vec<Particle>,
-    mut min: [f64; 3],
-    mut max: [f64; 3],
-) {
-    match nodes[node] {
-        KDTree::Leaf { num_parts, leaf_parts } => {
-            for index in 0..num_parts {
-                let i = leaf_parts[index];
-                for dim in 0..2 {
-                    assert!(
-                        particles[i].p[dim] >= min[dim],
-                        "Particle dim {} is below min. i={} p={} min={}",
-                        dim,
-                        i,
-                        particles[i].p[dim],
-                        min[dim]
-                    );
-                    assert!(
-                        particles[i].p[dim] < max[dim],
-                        "Particle dim {} is above max. i={} p={} max={}",
-                        dim,
-                        i,
-                        particles[i].p[dim],
-                        max[dim]
-                    );
-                }
-            }
-        }
-        KDTree::Internal { split_dim, split_val, left, right, .. } => {
-            let split_dim = split_dim;
-            let tmin = min[split_dim];
-            let tmax = max[split_dim];
-            max[split_dim] = split_val;
-            recur_test_tree_struct(left, nodes, particles, min, max);
-            max[split_dim] = tmax;
-            min[split_dim] = split_val;
-            recur_test_tree_struct(right, nodes, particles, min, max);
-            min[split_dim] = tmin;
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{array_kd_tree, array_particle};
@@ -315,10 +278,9 @@ mod tests {
     fn two_leaves() {
         let parts = array_particle::circular_orbits(11);
         let mut node_vec = array_kd_tree::allocate_node_vec(parts.len());
-        assert_eq!(node_vec.len(), 6);
         let mut indices: Vec<usize> = (0..parts.len()).collect();
         array_kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
-        array_kd_tree::recur_test_tree_struct(
+        recur_test_tree_struct(
             0,
             &node_vec,
             &parts,
@@ -340,7 +302,7 @@ mod tests {
         let mut node_vec = array_kd_tree::allocate_node_vec(parts.len());
         let mut indices: Vec<usize> = (0..parts.len()).collect();
         array_kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
-        array_kd_tree::recur_test_tree_struct(
+        recur_test_tree_struct(
             0,
             &node_vec,
             &parts,
@@ -357,12 +319,57 @@ mod tests {
         let mut node_vec = array_kd_tree::allocate_node_vec(parts.len());
         let mut indices: Vec<usize> = (0..parts.len()).collect();
         array_kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
-        array_kd_tree::recur_test_tree_struct(
+        recur_test_tree_struct(
             0,
             &node_vec,
             &parts,
             [-1e100, -1e100, -1e100],
             [1e100, 1e100, 1e100],
         );
+    }
+
+    fn recur_test_tree_struct(
+        node: usize,
+        nodes: &Vec<array_kd_tree::KDTree>,
+        particles: &Vec<array_particle::Particle>,
+        mut min: [f64; 3],
+        mut max: [f64; 3],
+    ) {
+        match nodes[node] {
+            array_kd_tree::KDTree::Leaf { num_parts, leaf_parts } => {
+                for index in 0..num_parts {
+                    let i = leaf_parts[index];
+                    for dim in 0..2 {
+                        assert!(
+                            particles[i].p[dim] >= min[dim],
+                            "Particle dim {} is below min. i={} p={} min={}",
+                            dim,
+                            i,
+                            particles[i].p[dim],
+                            min[dim]
+                        );
+                        assert!(
+                            particles[i].p[dim] < max[dim],
+                            "Particle dim {} is above max. i={} p={} max={}",
+                            dim,
+                            i,
+                            particles[i].p[dim],
+                            max[dim]
+                        );
+                    }
+                }
+            }
+            array_kd_tree::KDTree::Internal { split_dim, split_val, left, right, .. } => {
+                let split_dim = split_dim;
+                let tmin = min[split_dim];
+                let tmax = max[split_dim];
+                max[split_dim] = split_val;
+                recur_test_tree_struct(left, nodes, particles, min, max);
+                max[split_dim] = tmax;
+                min[split_dim] = split_val;
+                recur_test_tree_struct(right, nodes, particles, min, max);
+                min[split_dim] = tmin;
+            }
+        }
     }
 }

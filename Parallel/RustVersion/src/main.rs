@@ -1,5 +1,6 @@
 mod array_particle;
 mod array_kd_tree;
+mod quickstat;
 
 use clap::Parser;
 use std::time::Instant;

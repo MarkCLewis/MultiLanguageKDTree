@@ -11,6 +11,7 @@ authors = ["Mark Lewis <mlewis@trinity.edu>"]
 [dependencies]
 clap = { version = "4.0.29", features = ["derive"] }
 fastrand = "1.4"
+num_cpus = "1.16.0"
 rayon = "1.8.1"
 
 [profile.benchmark]
