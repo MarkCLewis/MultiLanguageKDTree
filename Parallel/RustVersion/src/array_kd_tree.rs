@@ -410,11 +410,11 @@ pub fn build_tree_par4<'a>(
         // println!("num_nodes = {}", num_nodes);
         let (_, _) = 
         if thread_cnt < num_cpus::get() {
-            join(|| build_tree_par3(left_indices, cur_node + 1, particles, left_nodes, thread_cnt * 2),
-            || build_tree_par3(right_indices, cur_node + 1 + num_nodes, particles, right_nodes, thread_cnt * 2))
+            join(|| build_tree_par4(left_indices, cur_node + 1, particles, left_nodes, thread_cnt * 2),
+            || build_tree_par4(right_indices, cur_node + 1 + num_nodes, particles, right_nodes, thread_cnt * 2))
         } else {
-            (build_tree_par3(left_indices, cur_node + 1, particles, left_nodes, thread_cnt * 2),
-            build_tree_par3(right_indices, cur_node + 1 + num_nodes, particles, right_nodes, thread_cnt * 2))
+            (build_tree_par4(left_indices, cur_node + 1, particles, left_nodes, thread_cnt * 2),
+            build_tree_par4(right_indices, cur_node + 1 + num_nodes, particles, right_nodes, thread_cnt * 2))
         }
         ;
 
