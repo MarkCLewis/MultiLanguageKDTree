@@ -12,10 +12,10 @@ fn main() {
   build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
   let post = Instant::now();
   eprintln!("Sequential Runtime = {}", (post - pre).as_secs_f64());
-  // let pre = Instant::now();
-  // build_tree_par1(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
-  // let post = Instant::now();
-  // eprintln!("Par1 Runtime = {}", (post - pre).as_secs_f64());
+  let pre = Instant::now();
+  build_tree_par1(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
+  let post = Instant::now();
+  eprintln!("Par1 Runtime = {}", (post - pre).as_secs_f64());
   let pre = Instant::now();
   build_tree_par1_chunk(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
   let post = Instant::now();

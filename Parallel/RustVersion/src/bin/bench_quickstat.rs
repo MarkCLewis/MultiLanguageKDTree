@@ -36,14 +36,14 @@ fn main() {
     (post - pre).as_secs_f64());
 
   // MPSC
-//   for i in 0..n {
-//       indices[i] = i;
-//       buffer[i] = 0;
-//   }
-//   let pre = Instant::now();
-//   quickstat_index_mpsc(&mut indices[start..end], &mut buffer, goal - start, |i1, i2| vals[i1] < vals[i2]);
-//   let post = Instant::now();
-//   eprintln!(
-//     "Parallel runtime = {}",
-//     (post - pre).as_secs_f64());
+  for i in 0..n {
+      indices[i] = i;
+      buffer[i] = 0;
+  }
+  let pre = Instant::now();
+  quickstat_index_mpsc(&mut indices[start..end], &mut buffer, goal - start, |i1, i2| vals[i1] < vals[i2]);
+  let post = Instant::now();
+  eprintln!(
+    "MPSC runtime = {}",
+    (post - pre).as_secs_f64());
 }

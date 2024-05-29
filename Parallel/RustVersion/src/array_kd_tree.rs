@@ -639,6 +639,7 @@ pub fn simple_sim(bodies: &mut Vec<Particle>, dt: f64, steps: i64) {
         //     indices[i] = i;
         // }
         indices.par_iter_mut().enumerate().for_each(|(i, ind)| *ind = i);
+        // build_tree(&mut indices, 0, bodies.len(), bodies, 0, &mut tree);
         build_tree_par4(&mut indices, 0, bodies, &mut tree, 1);
         // if step % 10 == 0 {
         //     print_tree(step, &tree, &bodies);
