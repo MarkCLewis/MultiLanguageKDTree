@@ -1,4 +1,4 @@
-use core_simd::simd::*;
+use core_simd::simd::{num::SimdFloat, *};
 
 pub struct Particle {
     pub p: f64x4,

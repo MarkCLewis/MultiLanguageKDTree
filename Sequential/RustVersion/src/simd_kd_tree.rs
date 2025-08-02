@@ -1,7 +1,10 @@
 use std::{fs::File, io::Write};
 
-use crate::array_particle::*;
-use super::array_particle::Particle;
+use crate::simd_particle::*;
+
+use super::simd_particle::Particle;
+
+use core_simd::simd::{num::SimdFloat, *};
 
 const MAX_PARTS: usize = 7;
 const THETA: f64 = 0.3;
@@ -18,7 +21,7 @@ pub enum KDTree {
         split_dim: usize,
         split_val: f64,
         m: f64,
-        cm: [f64; 3],
+        cm: f64x4,
         size: f64,
         left: usize,
         right: usize
@@ -69,25 +72,17 @@ pub fn build_tree<'a>(
         cur_node
     } else {
         // Pick split dim and value
-        let mut min = [1e100, 1e100, 1e100];
-        let mut max = [-1e100, -1e100, -1e100];
+        let mut min = f64x4::splat(1e100);
+        let mut max = f64x4::splat(-1e100);
         let mut m = 0.0;
-        let mut cm = [0.0, 0.0, 0.0];
+        let mut cm = f64x4::splat(0.0);
         for i in start..end {
             m += particles[indices[i]].m;
-            cm[0] += particles[indices[i]].m * particles[indices[i]].p[0];
-            cm[1] += particles[indices[i]].m * particles[indices[i]].p[1];
-            cm[2] += particles[indices[i]].m * particles[indices[i]].p[2];
-            min[0] = f64::min(min[0], particles[indices[i]].p[0]);
-            min[1] = f64::min(min[1], particles[indices[i]].p[1]);
-            min[2] = f64::min(min[2], particles[indices[i]].p[2]);
-            max[0] = f64::max(max[0], particles[indices[i]].p[0]);
-            max[1] = f64::max(max[1], particles[indices[i]].p[1]);
-            max[2] = f64::max(max[2], particles[indices[i]].p[2]);
+            cm += f64x4::splat(particles[indices[i]].m) * particles[indices[i]].p;
+            min = f64x4::simd_min(min, particles[indices[i]].p);
+            max = f64x4::simd_max(max, particles[indices[i]].p);
         }
-        cm[0] /= m;
-        cm[1] /= m;
-        cm[2] /= m;
+        cm /= f64x4::splat(m);
         let mut split_dim = 0;
         for dim in 1..3 {
             if max[dim] - min[dim] > max[split_dim] - min[split_dim] {
@@ -137,48 +132,45 @@ pub fn build_tree<'a>(
     }
 }
 
-fn accel_recur(cur_node: usize, p: usize, particles: &Vec<Particle>, nodes: &Vec<KDTree>) -> [f64; 3] {
+fn accel_recur(cur_node: usize, p: usize, particles: &Vec<Particle>, nodes: &Vec<KDTree>) -> f64x4 {
     // println!("accel {}", cur_node);
     match nodes[cur_node] {
         KDTree::Leaf { num_parts, leaf_parts} => {
-            let mut acc = [0.0, 0.0, 0.0];
+            let mut acc = f64x4::splat(0.0);
             for i in 0..(num_parts) {
                 if leaf_parts[i] != p {
                     let pp_acc = calc_pp_accel(&particles[p], &particles[leaf_parts[i]]);
-                    acc[0] += pp_acc[0];
-                    acc[1] += pp_acc[1];
-                    acc[2] += pp_acc[2];
+                    acc += pp_acc;
                 }
             }
             acc
         }
         KDTree::Internal { m, cm, size, left, right, .. } => {
-            let dx = particles[p].p[0] - cm[0];
-            let dy = particles[p].p[1] - cm[1];
-            let dz = particles[p].p[2] - cm[2];
-            let dist_sqr = dx * dx + dy * dy + dz * dz;
+            let d = particles[p].p - cm;
+            let dist_sqr = (d * d).reduce_sum();
             // println!("dist = {}, size = {}", dist, nodes[cur_node].size);
             if size * size < THETA * THETA * dist_sqr {
                 let dist = f64::sqrt(dist_sqr);
                 let magi = -m / (dist_sqr * dist);
-                [dx * magi, dy * magi, dz * magi]
+                d * f64x4::splat(magi)
             } else {
                 let left_acc = accel_recur(left, p, particles, nodes);
                 let right_acc = accel_recur(right, p, particles, nodes);
-                [left_acc[0] + right_acc[0], left_acc[1] + right_acc[1], left_acc[2] + right_acc[2]]
+                left_acc + right_acc
             }
         }
     }
 }
 
-pub fn calc_accel(p: usize, particles: &Vec<Particle>, nodes: &Vec<KDTree>) -> [f64; 3] {
+pub fn calc_accel(p: usize, particles: &Vec<Particle>, nodes: &Vec<KDTree>) -> f64x4 {
     accel_recur(0, p, particles, nodes)
 }
 
 pub fn simple_sim(bodies: &mut Vec<Particle>, dt: f64, steps: i64) {
+    let dt_vec = f64x4::splat(dt);
     let mut acc = Vec::new();
     for _ in 0..bodies.len() {
-        acc.push([0.0, 0.0, 0.0])
+        acc.push(f64x4::splat(0.0))
     }
     // let mut time = Instant::now();
     let mut tree = allocate_node_vec(bodies.len());
@@ -201,18 +193,10 @@ pub fn simple_sim(bodies: &mut Vec<Particle>, dt: f64, steps: i64) {
             acc[i] = calc_accel(i, &bodies, &tree);
         }
         for i in 0..bodies.len() {
-            bodies[i].v[0] += dt * acc[i][0];
-            bodies[i].v[1] += dt * acc[i][1];
-            bodies[i].v[2] += dt * acc[i][2];
-            let dx = dt * bodies[i].v[0];
-            let dy = dt * bodies[i].v[1];
-            let dz = dt * bodies[i].v[2];
-            bodies[i].p[0] += dx;
-            bodies[i].p[1] += dy;
-            bodies[i].p[2] += dz;
-            acc[i][0] = 0.0;
-            acc[i][1] = 0.0;
-            acc[i][2] = 0.0;
+            bodies[i].v += dt_vec * acc[i];
+            let d = bodies[i].v * dt_vec;
+            bodies[i].p += d;
+            acc[i] = f64x4::splat(0.0);
         }
     }
 }
@@ -292,39 +276,38 @@ fn recur_test_tree_struct(
 
 #[cfg(test)]
 mod tests {
-    // use crate::{array_kd_tree, array_particle};
-    use crate::{array_kd_tree, array_particle};
+    use crate::{simd_kd_tree, simd_particle};
 
     #[test]
     fn single_node() {
-        let parts = array_particle::two_bodies();
-        let mut node_vec = array_kd_tree::allocate_node_vec(parts.len());
+        let parts = simd_particle::two_bodies();
+        let mut node_vec = simd_kd_tree::allocate_node_vec(parts.len());
         assert_eq!(node_vec.len(), 2);
         let mut indices: Vec<usize> = (0..parts.len()).collect();
-        array_kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
+        simd_kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
         match node_vec[0] {
-            array_kd_tree::KDTree::Leaf { num_parts, .. } => assert_eq!(num_parts, parts.len()),
+            simd_kd_tree::KDTree::Leaf { num_parts, .. } => assert_eq!(num_parts, parts.len()),
             _ => assert!(false, "Root isn't leaf of right size when small.")
         };
     }
 
     #[test]
     fn two_leaves() {
-        let parts = array_particle::circular_orbits(11);
-        let mut node_vec = array_kd_tree::allocate_node_vec(parts.len());
+        let parts = simd_particle::circular_orbits(11);
+        let mut node_vec = simd_kd_tree::allocate_node_vec(parts.len());
         assert_eq!(node_vec.len(), 6);
         let mut indices: Vec<usize> = (0..parts.len()).collect();
-        array_kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
-        array_kd_tree::recur_test_tree_struct(
+        simd_kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
+        simd_kd_tree::recur_test_tree_struct(
             0,
             &node_vec,
             &parts,
             [-1e100, -1e100, -1e100],
             [1e100, 1e100, 1e100],
         );
-        assert!(std::matches!(node_vec[0], array_kd_tree::KDTree::Internal { .. }));
+        assert!(std::matches!(node_vec[0], simd_kd_tree::KDTree::Internal { .. }));
         match (node_vec[1], node_vec[2]) {
-            (array_kd_tree::KDTree::Leaf { num_parts: n1, ..}, array_kd_tree::KDTree::Leaf {num_parts: n2, ..}) => {
+            (simd_kd_tree::KDTree::Leaf { num_parts: n1, ..}, simd_kd_tree::KDTree::Leaf {num_parts: n2, ..}) => {
                 assert_eq!(n1 + n2, 12);
             }
             _ => assert!(false, "Node vectors weren't leaves.")
@@ -333,11 +316,11 @@ mod tests {
 
     #[test]
     fn big_solar() {
-        let parts = array_particle::circular_orbits(5000);
-        let mut node_vec = array_kd_tree::allocate_node_vec(parts.len());
+        let parts = simd_particle::circular_orbits(5000);
+        let mut node_vec = simd_kd_tree::allocate_node_vec(parts.len());
         let mut indices: Vec<usize> = (0..parts.len()).collect();
-        array_kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
-        array_kd_tree::recur_test_tree_struct(
+        simd_kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
+        simd_kd_tree::recur_test_tree_struct(
             0,
             &node_vec,
             &parts,
@@ -348,13 +331,13 @@ mod tests {
 
     #[test]
     fn big_solar_with_steps() {
-        let mut parts = array_particle::circular_orbits(5000);
-        array_kd_tree::simple_sim(&mut parts, 1e-3, 10);
+        let mut parts = simd_particle::circular_orbits(5000);
+        simd_kd_tree::simple_sim(&mut parts, 1e-3, 10);
 
-        let mut node_vec = array_kd_tree::allocate_node_vec(parts.len());
+        let mut node_vec = simd_kd_tree::allocate_node_vec(parts.len());
         let mut indices: Vec<usize> = (0..parts.len()).collect();
-        array_kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
-        array_kd_tree::recur_test_tree_struct(
+        simd_kd_tree::build_tree(&mut indices, 0, parts.len(), &parts, 0, &mut node_vec);
+        simd_kd_tree::recur_test_tree_struct(
             0,
             &node_vec,
             &parts,
