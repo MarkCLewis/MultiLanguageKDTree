@@ -74,6 +74,15 @@ class F64x3:
             return self.z
         raise IndexError(f"Got index {idx}, but only 0-2 are valid")
 
+    def __setitem__(self, idx, value):
+        if idx == 0:
+            self.x = value
+        elif idx == 1:
+            self.y = value
+        elif idx == 2:
+            self.z = value
+        raise IndexError(f"Got index {idx}, but only 0-2 are valid")
+
 
 f64x3 = F64x3
 
