@@ -4,7 +4,7 @@ use rust_kdtree_nbody::array_kd_tree::*;
 use rust_kdtree_nbody::array_particle::*;
 
 fn main() {
-  let parts = circular_orbits(10000000);
+  let parts = circular_orbits(100000000);
   let mut node_vec = allocate_node_vec(parts.len());
   let mut indices: Vec<usize> = (0..parts.len()).collect();
   let mut buffer: Vec<usize> = (0..parts.len()).collect();
