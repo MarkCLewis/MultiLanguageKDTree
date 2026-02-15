@@ -27,16 +27,16 @@ fn main() {
   eprintln!("Par2 Runtime = {}", (post - pre).as_secs_f64());
   let mut indices: Vec<usize> = (0..parts.len()).collect();
   let pre = Instant::now();
-  build_tree_par3(&mut indices, 0, &parts, &mut node_vec, 1);
+  build_tree_par3(&mut indices, 0, &parts, &mut node_vec, rayon::current_num_threads());
   let post = Instant::now();
   eprintln!("Par3 Runtime = {}", (post - pre).as_secs_f64());
   let pre = Instant::now();
-  build_tree_par3_chunk(&mut indices, 0, &parts, &mut node_vec, 1);
+  build_tree_par3_chunk(&mut indices, 0, &parts, &mut node_vec, rayon::current_num_threads());
   let post = Instant::now();
   eprintln!("Par3 Chunk Runtime = {}", (post - pre).as_secs_f64());
   let mut indices: Vec<usize> = (0..parts.len()).collect();
   let pre = Instant::now();
-  build_tree_par4(&mut indices, 0, &parts, &mut node_vec, 1);
+  build_tree_par4(&mut indices, 0, &parts, &mut node_vec, rayon::current_num_threads());
   let post = Instant::now();
   eprintln!("Par4 Runtime = {}", (post - pre).as_secs_f64());
 }
